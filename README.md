@@ -1,4 +1,21 @@
-# AEO audit starter
+# AEOGo
+
+## Web app (Next.js + Node.js)
+
+The full product lives in [`web/`](web/README.md): marketing site, accounts, Dodo Payments
+subscriptions, a customer dashboard, and a worker that audits each paying customer's website
+for AI answer engines and writes the fixes. See [`web/README.md`](web/README.md) for setup.
+
+    cd web
+    npm install
+    cp .env.example .env.local
+    npm run db:migrate
+    npm run dev
+
+## AEO audit starter (Python prototype)
+
+The original command-line auditor. The web app's TypeScript engine (`web/src/lib/aeo`) is a
+port and extension of these checks.
 
     pip install -r requirements.txt
     python aeo_audit.py yourdomain.com --max-pages 100      # add --render for JS comparison
