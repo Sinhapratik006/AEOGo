@@ -1,0 +1,5 @@
+requests
+beautifulsoup4
+anthropic
+# optional, for --render:
+# playwright   (then run: playwright install chromium)
