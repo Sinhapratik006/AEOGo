@@ -1,5 +1,9 @@
 # AEOGo
 
+- Email: demo@aeogo.com
+- Password: Demo1234!
+- Name: Demo User
+
 ## Web app (Next.js + Node.js)
 
 The full product lives in [`web/`](web/README.md): marketing site, accounts, Dodo Payments

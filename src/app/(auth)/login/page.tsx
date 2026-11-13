@@ -24,7 +24,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
 }
 
 async function LoginGate({ searchParams }: Pick<PageProps<"/login">, "searchParams">) {
-  const params = await searchParams;
+  const params = (await searchParams) ?? {};
   const next = safeNextPath(params.next);
   const error = typeof params.error === "string" ? params.error : null;
   if (await getCurrentUser()) redirect(next ?? "/dashboard");
