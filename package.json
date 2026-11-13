@@ -33,6 +33,8 @@
     "react-dom": "19.3.0",
     "robots-parser": "^3.0.1",
     "server-only": "^0.0.1",
+    "sql.js": "^1.16.0",
+    "sqljs": "^0.0.0-6",
     "tsx": "^4.23.15"
   },
   "devDependencies": {
