@@ -59,10 +59,14 @@ export const POST = withApi(async (req: Request) => {
   if (!isPlanId(plan)) throw new HttpError(400, "VALIDATION_ERROR", "Choose a plan.", { field: "plan" });
   const normalized = normalizeWebsiteUrl(str(body.url, 2048));
   if (!normalized.ok) throw new HttpError(400, "VALIDATION_ERROR", normalized.error, { field: "url" });
-  if (!productIdForPlan(plan)) throw new ConfigError(`DODO_PRODUCT_ID_${plan.toUpperCase()} is not set`);
 
-  const limit = await rateLimit(`checkout:user:${user.id}`, 20, 60 * 60);
-  if (!limit.ok) throw tooManyRequests(limit.retryAfterSeconds);
+  const isFree = plan === "free";
+  if (!isFree) {
+    if (!productIdForPlan(plan)) throw new ConfigError(`DODO_PRODUCT_ID_${plan.toUpperCase()} is not set`);
+
+    const limit = await rateLimit(`checkout:user:${user.id}`, 20, 60 * 60);
+    if (!limit.ok) throw tooManyRequests(limit.retryAfterSeconds);
+  }
 
   const host = await checkPublicHostname(normalized.domain);
   if (!host.ok) {
@@ -84,12 +88,38 @@ export const POST = withApi(async (req: Request) => {
     }
   }
 
+  if (isFree) {
+    const freeSites = await getDb()
+      .select({ plan: websites.plan })
+      .from(websites)
+      .where(eq(websites.userId, user.id));
+    if (freeSites.some((s) => s.plan === "free")) {
+      throw new HttpError(
+        409,
+        "FREE_TIER_LIMIT",
+        "The free plan is limited to one website. Upgrade to Starter to add more websites.",
+      );
+    }
+  }
+
   const db = getDb();
   const [site] = await db
     .insert(websites)
-    .values({ userId: user.id, url: normalized.url, domain: normalized.domain, plan, status: "pending_payment" })
+    .values({
+      userId: user.id,
+      url: normalized.url,
+      domain: normalized.domain,
+      plan,
+      // Free sites activate immediately — no checkout, no Dodo subscription.
+      status: isFree ? "active" : "pending_payment",
+    })
     .onConflictDoUpdate({ target: [websites.userId, websites.url], set: { updatedAt: new Date() } })
     .returning();
+
+  if (isFree) {
+    return ok({ websiteId: site.id, status: site.status }, 201);
+  }
+
   if (LIVE_SUBSCRIPTION_STATUSES.includes(site.status)) {
     throw new HttpError(409, "ALREADY_SUBSCRIBED", `${site.domain} already has an active plan.`, { websiteId: site.id });
   }

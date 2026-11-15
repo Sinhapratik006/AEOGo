@@ -17,6 +17,11 @@ export function PricingCards() {
               Most popular
             </Badge>
           )}
+          {plan.id === "free" && (
+            <Badge tone="green" className="absolute -top-3 left-2 bg-emerald-500 text-white ring-emerald-500">
+              Free
+            </Badge>
+          )}
           <h3 className="text-lg font-semibold text-slate-900">{plan.name}</h3>
           <p className="mt-1 min-h-10 text-sm text-slate-600">{plan.tagline}</p>
           <p className="mt-6 flex items-baseline gap-1">

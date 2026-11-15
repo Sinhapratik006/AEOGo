@@ -44,6 +44,8 @@ export function missingBillingConfig(): string[] {
   if (!process.env.DODO_PAYMENTS_API_KEY) missing.push("DODO_PAYMENTS_API_KEY");
   if (!process.env.DODO_PAYMENTS_WEBHOOK_KEY) missing.push("DODO_PAYMENTS_WEBHOOK_KEY");
   for (const plan of PLAN_IDS) {
+    // The Free plan has no Dodo product and needs no checkout.
+    if (plan === "free") continue;
     if (!productIdForPlan(plan)) missing.push(`DODO_PRODUCT_ID_${plan.toUpperCase()}`);
   }
   return missing;

@@ -1,7 +1,7 @@
 // Shared, dependency-free constants. Safe to import from the DB schema, the
 // proxy, client components and the worker.
 
-export const PLAN_IDS = ["starter", "growth", "pro"] as const;
+export const PLAN_IDS = ["free", "starter", "growth", "pro"] as const;
 export type PlanId = (typeof PLAN_IDS)[number];
 
 export const WEBSITE_STATUSES = [

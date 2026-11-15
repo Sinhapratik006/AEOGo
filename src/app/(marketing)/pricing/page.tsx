@@ -26,7 +26,7 @@ export default function PricingPage() {
         <div className="mx-auto max-w-6xl px-4 pt-16 pb-10 text-center sm:px-6">
           <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">Pricing</h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600">
-            One plan per website. Subscribe, enter your URL, and the AEO automation starts immediately.
+            One plan per website. Start with the free plan, or subscribe and enter your URL — the AEO automation starts immediately.
           </p>
         </div>
       </section>

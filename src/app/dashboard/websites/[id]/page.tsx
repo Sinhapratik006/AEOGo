@@ -61,7 +61,8 @@ function HeaderActions({ site, openAudit, latestCompleted }: { site: Website; op
       <>
         <RunAuditButton websiteId={site.id} disabled={Boolean(openAudit)} />
         {latestCompleted && <ExportLink auditId={latestCompleted.id} />}
-        {!site.cancelAtPeriodEnd && <CancelPlanButton websiteId={site.id} />}
+        {!site.cancelAtPeriodEnd && site.plan !== "free" && <CancelPlanButton websiteId={site.id} />}
+      <RemoveWebsiteButton websiteId={site.id} />
       </>
     );
   }

@@ -23,10 +23,17 @@ export function AddWebsiteForm({ initialPlan, initialUrl }: { initialPlan: PlanI
     setExistingWebsiteId(null);
     setPending(true);
     try {
-      const res = await api<{ checkoutUrl: string }>("/api/websites", {
+      const res = await api<{ checkoutUrl?: string; websiteId?: string }>("/api/websites", {
         body: { url, plan, skipReachabilityCheck },
       });
-      window.location.assign(res.checkoutUrl);
+      // Free sites activate immediately — no checkout page to visit.
+      if (plan === "free") {
+        window.location.assign(res.websiteId ? `/dashboard/websites/${res.websiteId}` : "/dashboard");
+        return;
+      }
+      const checkoutUrl = res.checkoutUrl;
+      if (!checkoutUrl) throw new Error("The website was created, but no checkout URL was returned.");
+      window.location.assign(checkoutUrl);
     } catch (err) {
       setPending(false);
       if (err instanceof ApiError && err.code === "UNREACHABLE") {
@@ -111,8 +118,8 @@ export function AddWebsiteForm({ initialPlan, initialUrl }: { initialPlan: PlanI
                   {option.highlighted && <Badge tone="indigo">Popular</Badge>}
                 </span>
                 <span className="mt-2 text-2xl font-bold text-slate-900">
-                  {`$${option.priceMonthly}`}
-                  <span className="text-sm font-normal text-slate-500">/mo</span>
+                  {option.priceMonthly === 0 ? "Free" : `$${option.priceMonthly}`}
+                  {option.priceMonthly > 0 && <span className="text-sm font-normal text-slate-500">/mo</span>}
                 </span>
                 <span className="mt-3 flex flex-col gap-1.5 text-sm text-slate-600">
                   <span className="flex items-center gap-2">
@@ -151,14 +158,18 @@ export function AddWebsiteForm({ initialPlan, initialUrl }: { initialPlan: PlanI
 
       <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-slate-600">
-          <p className="font-semibold text-slate-900">{`${selected.name} plan · $${selected.priceMonthly}/month`}</p>
+          <p className="font-semibold text-slate-900">
+            {selected.priceMonthly === 0 ? `${selected.name} plan · Free` : `${selected.name} plan · $${selected.priceMonthly}/month`}
+          </p>
           <p className="mt-1">
-            You&apos;ll complete payment securely with Dodo Payments. The automation starts as soon as it&apos;s
-            confirmed.
+            {selected.priceMonthly === 0
+              ? "No payment required. Your website is added immediately and the AEO audit starts on its weekly schedule."
+              : "You&apos;ll complete payment securely with Dodo Payments. The automation starts as soon as it&apos;s confirmed."}
           </p>
         </div>
         <button type="submit" disabled={pending} className={buttonClasses("primary", "lg")}>
-          {pending && <Spinner />} Continue to checkout
+          {pending && <Spinner />}
+          {selected.priceMonthly === 0 ? "Start free audit" : "Continue to checkout"}
         </button>
       </div>
     </form>

@@ -19,6 +19,23 @@ export interface Plan {
 }
 
 export const PLANS: Record<PlanId, Plan> = {
+  free: {
+    id: "free",
+    name: "Free",
+    tagline: "Try AEOGo on one website at no cost. No card required.",
+    priceMonthly: 0,
+    maxPages: 10,
+    auditIntervalHours: 24 * 7,
+    aiDraftsPerAudit: 0,
+    manualAuditsPerDay: 1,
+    features: [
+      "1 website, up to 10 pages per audit",
+      "Weekly automated AEO audits",
+      "AI crawler access & robots.txt checks",
+      "llms.txt and schema markup generator",
+      "AEO score tracking",
+    ],
+  },
   starter: {
     id: "starter",
     name: "Starter",

@@ -17,7 +17,9 @@ export const DELETE = withApi(async (req: Request, ctx: RouteContext<"/api/websi
   const user = await requireApiUser();
   const { id } = await ctx.params;
   const site = await getOwnedWebsite(user.id, id);
-  if (LIVE_SUBSCRIPTION_STATUSES.includes(site.status)) {
+  // The Free plan has no Dodo subscription, so a free site can be removed even
+  // though its status is "active". Paid sites must be cancelled first.
+  if (site.plan !== "free" && LIVE_SUBSCRIPTION_STATUSES.includes(site.status)) {
     throw new HttpError(409, "HAS_ACTIVE_SUBSCRIPTION", "Cancel the subscription before removing this website.");
   }
   await getDb().delete(websites).where(eq(websites.id, site.id));
