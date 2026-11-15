@@ -30,6 +30,8 @@ export const users = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     email: text("email").notNull(),
     name: text("name").notNull(),
+    // Staff flag: admin users can access all plans / admin areas.
+    isAdmin: boolean("is_admin").notNull().default(false),
     // Nullable: accounts signed up with Google only have no password hash.
     passwordHash: text("password_hash"),
     // Nullable: links a Google account (email + password accounts have no Google id).
@@ -44,6 +46,18 @@ export const users = pgTable(
     // without a Google account don't collide.
     uniqueIndex("users_google_id_key").on(t.googleId),
   ],
+);
+
+/** Contacts (name + email) that should receive audit reports. */
+export const auditRecipients = pgTable(
+  "audit_recipients",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    createdAt: tstz("created_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("audit_recipients_email_key").on(t.email)],
 );
 
 export const sessions = pgTable(
@@ -270,6 +284,7 @@ export const rateLimits = pgTable("rate_limits", {
 });
 
 export type User = typeof users.$inferSelect;
+export type AuditRecipient = typeof auditRecipients.$inferSelect;
 export type Website = typeof websites.$inferSelect;
 export type Audit = typeof audits.$inferSelect;
 export type Page = typeof pages.$inferSelect;

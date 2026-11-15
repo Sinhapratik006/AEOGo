@@ -11,6 +11,7 @@ export interface SessionUser {
   id: string;
   email: string;
   name: string;
+  isAdmin: boolean;
   dodoCustomerId: string | null;
   hasPassword: boolean;
   googleLinked: boolean;
@@ -67,6 +68,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
         id: users.id,
         email: users.email,
         name: users.name,
+        isAdmin: users.isAdmin,
         dodoCustomerId: users.dodoCustomerId,
         passwordHash: users.passwordHash,
         googleId: users.googleId,
@@ -82,6 +84,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       id: row.id,
       email: row.email,
       name: row.name,
+      isAdmin: row.isAdmin,
       dodoCustomerId: row.dodoCustomerId,
       hasPassword: !!row.passwordHash,
       googleLinked: !!row.googleId,

@@ -23,7 +23,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^1.0.0",
     "cheerio": "^1.2.0",
-    "concurrently": "^10.0.6",
+    "concurrently": "^10.0.7",
     "docker": "^1.0.0",
     "dodopayments": "^2.56.0",
     "drizzle-orm": "^0.45.4",
