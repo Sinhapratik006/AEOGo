@@ -10,7 +10,7 @@
     "dev:web": "next dev",
     "dev:worker": "tsx watch worker/index.ts",
     "build": "next build",
-    "start": "npx next start",
+    "start": "npm run build && npx next start",
     "worker": "tsx worker/index.ts",
     "start:all": "concurrently -k -n web,worker \"next start\" \"tsx worker/index.ts\"",
     "lint": "eslint",
