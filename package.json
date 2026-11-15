@@ -9,7 +9,7 @@
     "dev": "concurrently -k -n web,worker -c blue,magenta \"next dev\" \"tsx watch worker/index.ts\"",
     "dev:web": "next dev",
     "dev:worker": "tsx watch worker/index.ts",
-    "build": "next build",
+    "build": "npx next build",
     "start": "npm run build && npx next start",
     "worker": "tsx worker/index.ts",
     "start:all": "concurrently -k -n web,worker \"next start\" \"tsx worker/index.ts\"",
