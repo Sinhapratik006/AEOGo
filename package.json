@@ -3,14 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "engines": {
-    "node": ">=20.12"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "concurrently -k -n web,worker -c blue,magenta \"next dev\" \"tsx watch worker/index.ts\"",
     "dev:web": "next dev",
     "dev:worker": "tsx watch worker/index.ts",
     "build": "npx next build",
-    "start": "npm run build && npx next start",
+    "start": "next start",
     "worker": "tsx worker/index.ts",
     "start:all": "concurrently -k -n web,worker \"next start\" \"tsx worker/index.ts\"",
     "lint": "eslint",
