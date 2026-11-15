@@ -1,6 +1,7 @@
 # AEOGo
 
-- Email: demo@aeogo.com
+- Email: demo@aeogo.com   finnaly done
+
 - Password: Demo1234!
 - Name: Demo User
 
