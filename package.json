@@ -12,6 +12,7 @@
     "build": "npx next build",
     "start": "next start",
     "worker": "tsx worker/index.ts",
+    "start:worker": "tsx worker/index.ts",
     "start:all": "concurrently -k -n web,worker \"next start\" \"tsx worker/index.ts\"",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
