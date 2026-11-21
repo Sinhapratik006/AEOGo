@@ -1,5 +1,6 @@
 import os from "node:os";
 import { sql } from "drizzle-orm";
+import type { Database } from "../src/db";
 import { loadEnv } from "../scripts/load-env";
 
 loadEnv();
@@ -15,6 +16,36 @@ const KEEP_DETAILED_AUDITS = 5;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * Retries `select 1` until the database is reachable, with a fixed retry
+ * interval. Throws if the database never becomes available so the worker
+ * exits with a clear error instead of silently looping.
+ */
+async function waitForDb(
+  db: Database,
+  { maxRetries = 20, retryIntervalMs = 3_000 }: { maxRetries?: number; retryIntervalMs?: number } = {},
+): Promise<void> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await db.execute(sql`select 1`);
+      console.log(`[worker] database connection established`);
+      return;
+    } catch (err) {
+      lastError = err;
+      const message = err instanceof Error ? err.message : String(err);
+      if (attempt === maxRetries) break;
+      console.error(
+        `[worker] database not ready (attempt ${attempt}/${maxRetries}): ${message} — retrying in ${retryIntervalMs / 1_000}s`,
+      );
+      await sleep(retryIntervalMs);
+    }
+  }
+  throw new Error(
+    `Database unavailable after ${maxRetries} attempts: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
+  );
+}
+
 async function main() {
   // Imported after loadEnv() so every module sees the configured environment.
   const { getDb, closeDb } = await import("../src/db");
@@ -27,7 +58,10 @@ async function main() {
   const running = new Set<Promise<void>>();
   let shuttingDown = false;
 
-  await db.execute(sql`select 1`);
+  // Wait for the database to become available. Postgres may still be starting
+  // up (e.g. right after `docker compose up`), so retry with backoff instead of
+  // crashing on the first connection timeout.
+  await waitForDb(db);
   console.log(
     `[worker] ${WORKER_ID} started: concurrency=${concurrency}, ` +
       `AI fixes=${aiEnabled() ? `on (${aiModel()})` : "off (ANTHROPIC_API_KEY not set)"}`,

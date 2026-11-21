@@ -41,7 +41,7 @@ export function getPool(): Pool {
       connectionString,
       max: Number(process.env.DATABASE_POOL_MAX ?? 10),
       idleTimeoutMillis: 30_000,
-      connectionTimeoutMillis: 10_000,
+      connectionTimeoutMillis: 30_000,
       // Explicitly set sslmode to suppress the deprecation warning and
       // adopt strong security semantics until pg v9.0.0 / pg-connection-string v3.0.0
       ...(sslMode && { ssl: { mode: sslMode } }),
