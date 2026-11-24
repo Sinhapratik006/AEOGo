@@ -18,6 +18,7 @@ import {
   withApi,
 } from "@/lib/server/api";
 import { createCheckoutForWebsite } from "@/lib/server/checkout";
+import { claimFreeTrial, FREE_TRIAL_USED_CODE, FREE_TRIAL_USED_MESSAGE } from "@/lib/server/free-trial";
 import { normalizeWebsiteUrl } from "@/lib/url";
 
 export const GET = withApi(async () => {
@@ -88,21 +89,49 @@ export const POST = withApi(async (req: Request) => {
     }
   }
 
+  const db = getDb();
+
   if (isFree) {
-    const freeSites = await getDb()
-      .select({ plan: websites.plan })
-      .from(websites)
-      .where(eq(websites.userId, user.id));
-    if (freeSites.some((s) => s.plan === "free")) {
-      throw new HttpError(
-        409,
-        "FREE_TIER_LIMIT",
-        "The free plan is limited to one website. Upgrade to Starter to add more websites.",
-      );
-    }
+    // One lifetime free trial per user: the claim and the website insert happen
+    // in one transaction. Concurrent claims serialize on the users row (the
+    // claim UPDATE only matches while free_trial_used is false), and if the
+    // insert fails the transaction rolls the claim back, so a claim is never
+    // burned without a website.
+    return db.transaction(async (tx) => {
+      // Trial claim first: a user whose trial is already used gets the
+      // user-facing FREE_TRIAL_USED error even while they still have a free
+      // website; the subsequent free-website check rolls the claim back if it
+      // throws, so an unused trial stays unused.
+      if (!(await claimFreeTrial(tx, user.id))) {
+        throw new HttpError(409, FREE_TRIAL_USED_CODE, FREE_TRIAL_USED_MESSAGE);
+      }
+      const freeSites = await tx
+        .select({ plan: websites.plan })
+        .from(websites)
+        .where(eq(websites.userId, user.id));
+      if (freeSites.some((s) => s.plan === "free")) {
+        throw new HttpError(
+          409,
+          "FREE_TIER_LIMIT",
+          "The free plan is limited to one website. Upgrade to Starter to add more websites.",
+        );
+      }
+      const [site] = await tx
+        .insert(websites)
+        .values({
+          userId: user.id,
+          url: normalized.url,
+          domain: normalized.domain,
+          plan,
+          // Free sites activate immediately — no checkout, no Dodo subscription.
+          status: "active",
+        })
+        .onConflictDoUpdate({ target: [websites.userId, websites.url], set: { updatedAt: new Date() } })
+        .returning();
+      return ok({ websiteId: site.id, status: site.status }, 201);
+    });
   }
 
-  const db = getDb();
   const [site] = await db
     .insert(websites)
     .values({
@@ -110,15 +139,11 @@ export const POST = withApi(async (req: Request) => {
       url: normalized.url,
       domain: normalized.domain,
       plan,
-      // Free sites activate immediately — no checkout, no Dodo subscription.
-      status: isFree ? "active" : "pending_payment",
+      // Paid sites wait for checkout; the subscription webhook flips the status.
+      status: "pending_payment",
     })
     .onConflictDoUpdate({ target: [websites.userId, websites.url], set: { updatedAt: new Date() } })
     .returning();
-
-  if (isFree) {
-    return ok({ websiteId: site.id, status: site.status }, 201);
-  }
 
   if (LIVE_SUBSCRIPTION_STATUSES.includes(site.status)) {
     throw new HttpError(409, "ALREADY_SUBSCRIBED", `${site.domain} already has an active plan.`, { websiteId: site.id });

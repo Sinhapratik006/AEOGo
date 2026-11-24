@@ -8,9 +8,20 @@ import { auditIntervalLabel, PLAN_LIST, PLANS } from "@/lib/plans";
 import { Field, FormError, Spinner } from "../form";
 import { Badge, buttonClasses, CheckIcon, cn } from "../ui";
 
-export function AddWebsiteForm({ initialPlan, initialUrl }: { initialPlan: PlanId; initialUrl: string }) {
+export function AddWebsiteForm({
+  initialPlan,
+  initialUrl,
+  freeTrialUsed,
+}: {
+  initialPlan: PlanId;
+  initialUrl: string;
+  /** Whether the user's lifetime free trial has already been claimed (then the Free plan is disabled). */
+  freeTrialUsed: boolean;
+}) {
   const [url, setUrl] = useState(initialUrl);
-  const [plan, setPlan] = useState<PlanId>(initialPlan);
+  // When the trial is used and the page was opened on the Free plan, start the
+  // user on a paid plan so they can't end up submitting Free.
+  const [plan, setPlan] = useState<PlanId>(freeTrialUsed && initialPlan === "free" ? "starter" : initialPlan);
   const [error, setError] = useState<string | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [unreachable, setUnreachable] = useState<string | null>(null);
@@ -103,6 +114,7 @@ export function AddWebsiteForm({ initialPlan, initialUrl }: { initialPlan: PlanI
                 className={cn(
                   "relative flex cursor-pointer flex-col rounded-xl border p-5 transition",
                   plan === option.id ? "border-indigo-600 bg-indigo-50/40 ring-1 ring-indigo-600" : "border-slate-200 hover:border-slate-300",
+                  freeTrialUsed && option.id === "free" && "cursor-not-allowed opacity-60",
                 )}
               >
                 <input
@@ -110,6 +122,7 @@ export function AddWebsiteForm({ initialPlan, initialUrl }: { initialPlan: PlanI
                   name="plan"
                   value={option.id}
                   checked={plan === option.id}
+                  disabled={freeTrialUsed && option.id === "free"}
                   onChange={() => setPlan(option.id)}
                   className="sr-only"
                 />
@@ -138,6 +151,11 @@ export function AddWebsiteForm({ initialPlan, initialUrl }: { initialPlan: PlanI
               </label>
             ))}
           </div>
+          {freeTrialUsed && (
+            <p className="mt-4 text-sm text-slate-500">
+              You have already used your free trial. Please choose a paid plan to continue.
+            </p>
+          )}
         </fieldset>
       </section>
 

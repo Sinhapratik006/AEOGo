@@ -34,6 +34,9 @@ export function productIdForPlan(plan: PlanId): string | null {
 export function planForProductId(productId: string | null | undefined): PlanId | null {
   if (!productId) return null;
   for (const plan of PLAN_IDS) {
+    // The Free plan has no Dodo product (nothing is sold as free), so a
+    // payment webhook must never map a product onto it.
+    if (plan === "free") continue;
     if (productIdForPlan(plan) === productId) return plan;
   }
   return null;
