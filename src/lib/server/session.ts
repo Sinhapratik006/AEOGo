@@ -13,6 +13,8 @@ export interface SessionUser {
   name: string;
   isAdmin: boolean;
   dodoCustomerId: string | null;
+  /** Lifetime free-trial claim; read so the UI can disable the Free plan. */
+  freeTrialUsed: boolean;
   hasPassword: boolean;
   googleLinked: boolean;
   sessionId: string;
@@ -70,6 +72,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
         name: users.name,
         isAdmin: users.isAdmin,
         dodoCustomerId: users.dodoCustomerId,
+        freeTrialUsed: users.freeTrialUsed,
         passwordHash: users.passwordHash,
         googleId: users.googleId,
       })
@@ -86,6 +89,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       name: row.name,
       isAdmin: row.isAdmin,
       dodoCustomerId: row.dodoCustomerId,
+      freeTrialUsed: row.freeTrialUsed,
       hasPassword: !!row.passwordHash,
       googleLinked: !!row.googleId,
     };

@@ -23,7 +23,7 @@ export default function NewWebsitePage({ searchParams }: PageProps<"/dashboard/w
 }
 
 async function NewWebsite({ searchParams }: Pick<PageProps<"/dashboard/websites/new">, "searchParams">) {
-  await requireUser();
+  const user = await requireUser();
   const params = await searchParams;
   const plan = isPlanId(params.plan) ? params.plan : "growth";
   const url = typeof params.url === "string" ? params.url.slice(0, 2048) : "";
@@ -36,7 +36,7 @@ async function NewWebsite({ searchParams }: Pick<PageProps<"/dashboard/websites/
           Set {missing.join(", ")} in .env.local. See README for how to create the Dodo Payments products and webhook.
         </Notice>
       )}
-      <AddWebsiteForm initialPlan={plan} initialUrl={url} />
+      <AddWebsiteForm initialPlan={plan} initialUrl={url} freeTrialUsed={user.freeTrialUsed} />
     </div>
   );
 }

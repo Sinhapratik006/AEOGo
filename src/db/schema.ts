@@ -36,6 +36,9 @@ export const users = pgTable(
     passwordHash: text("password_hash"),
     // Nullable: links a Google account (email + password accounts have no Google id).
     googleId: text("google_id"),
+    // Lifetime free-trial claim flag: one free trial per registered user.
+    // Deleting a website never clears it.
+    freeTrialUsed: boolean("free_trial_used").notNull().default(false),
     dodoCustomerId: text("dodo_customer_id"),
     createdAt: tstz("created_at").notNull().defaultNow(),
     updatedAt: tstz("updated_at").notNull().defaultNow(),

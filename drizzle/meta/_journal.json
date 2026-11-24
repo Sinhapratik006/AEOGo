@@ -15,6 +15,13 @@
       "when": 1794599849891,
       "tag": "0001_chemical_scream",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795545091548,
+      "tag": "0002_free_trial_used",
+      "breakpoints": true
     }
   ]
 }
