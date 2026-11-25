@@ -14,7 +14,12 @@ export class ApiError extends Error {
 /** JSON request to our own API. Throws ApiError with the server's message on failure. */
 export async function api<T = Record<string, unknown>>(
   path: string,
-  options: { method?: "GET" | "POST" | "PATCH" | "DELETE"; body?: unknown } = {},
+  options: {
+    method?: "GET" | "POST" | "PATCH" | "DELETE";
+    body?: unknown;
+    /** Redirect to /login on 401 (session expired). Callers that handle 401 as a normal result set this to false. */
+    redirectOnAuth?: boolean;
+  } = {},
 ): Promise<T> {
   let res: Response;
   try {
@@ -37,7 +42,7 @@ export async function api<T = Record<string, unknown>>(
   }
   if (!res.ok) {
     const error = (data?.error ?? {}) as Record<string, unknown>;
-    if (res.status === 401 && typeof window !== "undefined") {
+    if (options.redirectOnAuth !== false && res.status === 401 && typeof window !== "undefined") {
       // The session expired: a full page load clears client-cached pages from the old session.
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.assign(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);

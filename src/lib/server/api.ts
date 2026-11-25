@@ -126,10 +126,7 @@ export function str(value: unknown, maxLength = 500): string {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-export function isValidEmail(email: string): boolean {
-  return email.length <= 254 && EMAIL_RE.test(email);
-}
+export { isValidEmail } from "@/lib/email";
 
 export function tooManyRequests(retryAfterSeconds: number, message = "Too many attempts. Please try again later."): HttpError {
   return new HttpError(429, "RATE_LIMITED", message, { retryAfterSeconds });
