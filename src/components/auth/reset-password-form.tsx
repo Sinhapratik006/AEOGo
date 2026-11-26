@@ -31,9 +31,9 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
   if (!token) {
     return (
-      <div className="space-y-4 text-center text-sm text-slate-700">
+      <div className="space-y-4 text-center text-sm text-ink-700">
         <p>This reset link is missing its token.</p>
-        <Link href="/forgot-password" className="font-semibold text-indigo-600 hover:text-indigo-500">
+        <Link href="/forgot-password" className="font-semibold text-aurora-600 hover:text-aurora-500">
           Request a new link
         </Link>
       </div>

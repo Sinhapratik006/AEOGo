@@ -73,8 +73,8 @@ export function CheckoutStatus({
   if (failed) {
     return (
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-slate-900">Payment didn&apos;t go through</h1>
-        <p className="mt-2 text-sm text-slate-600">
+        <h1 className="text-2xl font-bold text-ink-900">Payment didn&apos;t go through</h1>
+        <p className="mt-2 text-sm text-ink-600">
           No charge was made for {domain}. You can try again with the same or a different payment method.
         </p>
         <div className="mt-6 flex justify-center gap-3">
@@ -96,8 +96,8 @@ export function CheckoutStatus({
 
   return (
     <div className="text-center">
-      <h1 className="text-2xl font-bold text-slate-900">{active ? "You're all set!" : "Confirming your payment…"}</h1>
-      <p className="mt-2 text-sm text-slate-600">
+      <h1 className="text-2xl font-bold text-ink-900">{active ? "You're all set!" : "Confirming your payment…"}</h1>
+      <p className="mt-2 text-sm text-ink-600">
         {active
           ? `The AEO automation for ${domain} is running. Taking you to your dashboard…`
           : "This usually takes a few seconds. Please keep this page open."}
@@ -110,12 +110,12 @@ export function CheckoutStatus({
               <span
                 className={cn(
                   "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
-                  step.done ? "bg-emerald-600 text-white" : current ? "bg-indigo-100 text-indigo-600" : "bg-slate-100 text-slate-400",
+                  step.done ? "bg-emerald-600 text-on-accent" : current ? "bg-aurora-100 text-aurora-600" : "bg-ink-100 text-ink-400",
                 )}
               >
                 {step.done ? <CheckIcon className="h-4 w-4" /> : current ? <Spinner /> : index + 1}
               </span>
-              <span className={cn("text-sm", step.done ? "font-medium text-slate-900" : "text-slate-500")}>{step.label}</span>
+              <span className={cn("text-sm", step.done ? "font-medium text-ink-900" : "text-ink-500")}>{step.label}</span>
             </li>
           );
         })}

@@ -55,22 +55,22 @@ export function SignupForm({ destination, loginHref }: { destination: string; lo
       <button type="submit" disabled={pending} className={buttonClasses("primary", "lg") + " w-full"}>
         {pending && <Spinner />} Create account
       </button>
-      <p className="text-center text-xs text-slate-500">— Or sign up with —</p>
+      <p className="text-center text-xs text-ink-500">— Or sign up with —</p>
       <GoogleButton href={googleHref} className="w-full" />
-      <p className="text-center text-xs text-slate-500">
+      <p className="text-center text-xs text-ink-500">
         By creating an account you agree to our{" "}
-        <Link href="/terms" className="underline hover:text-slate-700">
+        <Link href="/terms" className="underline hover:text-ink-700">
           Terms
         </Link>{" "}
         and{" "}
-        <Link href="/privacy" className="underline hover:text-slate-700">
+        <Link href="/privacy" className="underline hover:text-ink-700">
           Privacy Policy
         </Link>
         .
       </p>
-      <p className="text-center text-sm text-slate-600">
+      <p className="text-center text-sm text-ink-600">
         Already have an account?{" "}
-        <Link href={loginHref} className="font-semibold text-indigo-600 hover:text-indigo-500">
+        <Link href={loginHref} className="font-semibold text-aurora-600 hover:text-aurora-500">
           Sign in
         </Link>
       </p>

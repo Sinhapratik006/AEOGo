@@ -38,16 +38,16 @@ export const FAQ_ITEMS: Array<{ question: string; answer: string }> = [
 
 export function Faq() {
   return (
-    <div className="divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-white">
+    <div className="divide-y divide-ink-200 rounded-2xl border border-ink-200 bg-surface">
       {FAQ_ITEMS.map((item) => (
-        <details key={item.question} className="group px-6 py-5 [&_summary::-webkit-details-marker]:hidden">
+        <details key={item.question} className="group px-6 py-5 transition-colors open:bg-aurora-50/40 [&_summary::-webkit-details-marker]:hidden">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-4">
-            <h3 className="text-base font-semibold text-slate-900">{item.question}</h3>
-            <span className="text-xl leading-none text-slate-400 transition group-open:rotate-45" aria-hidden="true">
+            <h3 className="text-base font-semibold text-ink-900">{item.question}</h3>
+            <span className="text-xl leading-none text-ink-400 transition duration-300 group-open:rotate-45 group-open:text-aurora-600" aria-hidden="true">
               +
             </span>
           </summary>
-          <p className="mt-3 text-sm leading-relaxed text-slate-600">{item.answer}</p>
+          <p className="mt-3 animate-fade-up text-sm leading-relaxed text-ink-600">{item.answer}</p>
         </details>
       ))}
     </div>

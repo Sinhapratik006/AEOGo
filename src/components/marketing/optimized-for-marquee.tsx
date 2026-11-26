@@ -7,7 +7,7 @@ const ENGINES = ["ChatGPT", "Perplexity", "Claude", "Gemini", "Google AI Overvie
 const engineBadge = (engine: string, hidden?: boolean) => (
   <span
     key={engine}
-    className="shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full border border-slate-200 bg-white text-sm font-medium text-slate-600 shadow-sm hover:bg-slate-50 transition"
+    className="shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full border border-ink-200 bg-surface text-sm font-medium text-ink-600 transition hover:border-aurora-300 hover:text-aurora-700"
     aria-hidden={hidden}
   >
     {engine}
@@ -16,11 +16,11 @@ const engineBadge = (engine: string, hidden?: boolean) => (
 
 export function OptimizedForMarquee() {
   return (
-    <section aria-label="Supported answer engines" className="border-y border-slate-200 bg-white">
+    <section aria-label="Supported answer engines" className="border-y border-ink-200 bg-surface/60">
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-        <div className="overflow-hidden">
+        <div className="mask-fade-x overflow-hidden">
           <div className="marquee-track flex items-center gap-6 animate-[marquee_24s_linear_infinite]">
-            <span className="shrink-0 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+            <span className="shrink-0 text-xs font-semibold tracking-wider text-ink-400 uppercase">
               Optimized for
             </span>
             <Logo />

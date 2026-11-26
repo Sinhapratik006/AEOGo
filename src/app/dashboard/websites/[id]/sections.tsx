@@ -76,19 +76,19 @@ const SITE_FIELDS: DraftField[] = ["robots_txt", "llms_txt", "jsonld"];
 function FieldRow({ draft, label }: { draft: Draft; label: string }) {
   const limit = draft.field === "title" ? 60 : 160;
   return (
-    <div className="space-y-2 border-t border-slate-100 pt-4 first:border-t-0 first:pt-0">
+    <div className="space-y-2 border-t border-ink-100 pt-4 first:border-t-0 first:pt-0">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">{label}</span>
+        <span className="text-xs font-semibold tracking-wide text-ink-500 uppercase">{label}</span>
         {draft.status === "approved" && <Badge tone="green">Applied</Badge>}
       </div>
-      <p className="text-sm text-slate-500">
-        <span className="font-medium text-slate-600">Current: </span>
+      <p className="text-sm text-ink-500">
+        <span className="font-medium text-ink-600">Current: </span>
         {draft.currentValue ? <span className="line-through decoration-rose-300">{draft.currentValue}</span> : <em>missing</em>}
       </p>
-      <p className="text-sm text-slate-900">
+      <p className="text-sm text-ink-900">
         <span className="font-medium">Suggested: </span>
         {draft.proposed}{" "}
-        <span className={cn("text-xs", draft.proposed.length > limit ? "text-amber-600" : "text-slate-400")}>
+        <span className={cn("text-xs", draft.proposed.length > limit ? "text-amber-600" : "text-ink-400")}>
           ({draft.proposed.length} chars)
         </span>
       </p>
@@ -137,32 +137,32 @@ export async function FixesTab({ websiteId, hasCompletedAudit }: { websiteId: st
   return (
     <div className="space-y-8">
       {showAiNotice && <AiDisabledNotice />}
-      <p className="text-sm text-slate-600">
+      <p className="text-sm text-ink-600">
         Fixes are never published automatically. Copy each one into your site (or send it to your developer), then mark
         it as applied. The next audit confirms the change.
       </p>
 
       {siteFixes.length > 0 && (
         <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-slate-900">Site-wide fixes</h2>
+          <h2 className="text-lg font-semibold text-ink-900">Site-wide fixes</h2>
           {siteFixes.map((fix) => (
             <Card key={fix.id} className="p-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-slate-900">{SITE_FIX_META[fix.field]?.title ?? fix.field}</h3>
+                    <h3 className="font-semibold text-ink-900">{SITE_FIX_META[fix.field]?.title ?? fix.field}</h3>
                     {fix.status === "approved" && <Badge tone="green">Applied</Badge>}
                   </div>
-                  <p className="mt-1 text-sm text-slate-600">
+                  <p className="mt-1 text-sm text-ink-600">
                     {SITE_FIX_META[fix.field]?.where}{" "}
-                    <a href={fix.url} target="_blank" rel="noopener noreferrer nofollow" className="font-medium text-indigo-600 break-all">
+                    <a href={fix.url} target="_blank" rel="noopener noreferrer nofollow" className="font-medium text-aurora-600 break-all">
                       {fix.url}
                     </a>
                   </p>
-                  {fix.rationale && <p className="mt-2 text-sm text-slate-600">{fix.rationale}</p>}
+                  {fix.rationale && <p className="mt-2 text-sm text-ink-600">{fix.rationale}</p>}
                 </div>
               </div>
-              <pre className="mt-4 max-h-80 overflow-auto rounded-lg bg-slate-900 p-4 text-xs leading-relaxed text-slate-100">
+              <pre className="mt-4 max-h-80 overflow-auto rounded-lg bg-canvas p-4 text-xs leading-relaxed text-aurora-800 ring-1 ring-inset ring-ink-200">
                 <code>{fix.proposed}</code>
               </pre>
               <div className="mt-4">
@@ -175,19 +175,19 @@ export async function FixesTab({ websiteId, hasCompletedAudit }: { websiteId: st
 
       {pageGroups.length > 0 && (
         <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-slate-900">Page titles &amp; descriptions</h2>
+          <h2 className="text-lg font-semibold text-ink-900">Page titles &amp; descriptions</h2>
           {pageGroups.map((group) => {
             const reviewNote = [group.title, group.description].find((d) => d?.needsReview);
             const rationale = group.title?.rationale ?? group.description?.rationale;
             return (
               <Card key={group.url} className="space-y-4 p-5">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <a href={group.url} target="_blank" rel="noopener noreferrer nofollow" className="font-medium break-all text-indigo-600">
+                  <a href={group.url} target="_blank" rel="noopener noreferrer nofollow" className="font-medium break-all text-aurora-600">
                     {group.url}
                   </a>
                   {reviewNote && <Badge tone="amber">Review before publishing</Badge>}
                 </div>
-                {rationale && <p className="text-sm text-slate-600">{rationale}</p>}
+                {rationale && <p className="text-sm text-ink-600">{rationale}</p>}
                 {group.title && group.title.status !== "rejected" && <FieldRow draft={group.title} label="Title" />}
                 {group.description && group.description.status !== "rejected" && (
                   <FieldRow draft={group.description} label="Meta description" />
@@ -234,7 +234,7 @@ export async function IssuesTab({ auditId }: { auditId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <a href={`/api/audits/${auditId}/export`} className="text-sm font-medium text-indigo-600 hover:text-indigo-500" download>
+        <a href={`/api/audits/${auditId}/export`} className="text-sm font-medium text-aurora-600 hover:text-aurora-500" download>
           Download all issues (CSV)
         </a>
       </div>
@@ -244,30 +244,30 @@ export async function IssuesTab({ auditId }: { auditId: string }) {
           <Card key={`${group.code}-${group.severity}`} className="p-5">
             <div className="flex flex-wrap items-center gap-2">
               <SeverityBadge severity={group.severity} />
-              <h3 className="font-semibold text-slate-900">{info.title}</h3>
-              <span className="text-sm text-slate-500">
+              <h3 className="font-semibold text-ink-900">{info.title}</h3>
+              <span className="text-sm text-ink-500">
                 · {group.count} {info.scope === "site" ? (group.count === 1 ? "finding" : "findings") : group.count === 1 ? "page" : "pages"}
               </span>
             </div>
-            {info.why && <p className="mt-2 text-sm text-slate-600">{info.why}</p>}
+            {info.why && <p className="mt-2 text-sm text-ink-600">{info.why}</p>}
             {info.fix && (
-              <p className="mt-2 text-sm text-slate-800">
+              <p className="mt-2 text-sm text-ink-800">
                 <span className="font-semibold">How to fix: </span>
                 {info.fix}
               </p>
             )}
             <ul className="mt-3 space-y-1 text-sm">
               {group.urls.map((url, index) => (
-                <li key={`${url}-${index}`} className="flex flex-wrap gap-x-2 text-slate-600">
-                  <a href={url} target="_blank" rel="noopener noreferrer nofollow" className="break-all text-indigo-600 hover:underline">
+                <li key={`${url}-${index}`} className="flex flex-wrap gap-x-2 text-ink-600">
+                  <a href={url} target="_blank" rel="noopener noreferrer nofollow" className="break-all text-aurora-600 hover:underline">
                     {url}
                   </a>
-                  {group.details[index] && <span className="text-slate-500">({group.details[index]})</span>}
+                  {group.details[index] && <span className="text-ink-500">({group.details[index]})</span>}
                 </li>
               ))}
             </ul>
             {group.count > group.urls.length && (
-              <p className="mt-2 text-xs text-slate-500">+ {group.count - group.urls.length} more in the CSV export</p>
+              <p className="mt-2 text-xs text-ink-500">+ {group.count - group.urls.length} more in the CSV export</p>
             )}
           </Card>
         );
@@ -298,7 +298,7 @@ export async function PagesTab({ auditId }: { auditId: string }) {
   return (
     <Card className="overflow-x-auto">
       <table className="w-full min-w-[640px] text-left text-sm">
-        <thead className="border-b border-slate-200 bg-slate-50 text-xs text-slate-500 uppercase">
+        <thead className="border-b border-ink-200 bg-ink-50 text-xs text-ink-500 uppercase">
           <tr>
             <th scope="col" className="px-4 py-3 font-medium">Page</th>
             <th scope="col" className="px-4 py-3 font-medium">Score</th>
@@ -307,21 +307,21 @@ export async function PagesTab({ auditId }: { auditId: string }) {
             <th scope="col" className="px-4 py-3 font-medium">Schema</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-ink-100">
           {rows.map((row) => (
             <tr key={row.id} className="align-top">
               <td className="max-w-md px-4 py-3">
-                <a href={row.url} target="_blank" rel="noopener noreferrer nofollow" className="font-medium break-all text-indigo-600 hover:underline">
+                <a href={row.url} target="_blank" rel="noopener noreferrer nofollow" className="font-medium break-all text-aurora-600 hover:underline">
                   {row.url}
                 </a>
-                <p className="mt-0.5 truncate text-xs text-slate-500">
+                <p className="mt-0.5 truncate text-xs text-ink-500">
                   {row.statusCode && row.statusCode >= 400 ? `HTTP ${row.statusCode}` : row.statusCode === 0 ? "Could not load" : row.title || "(no title)"}
                 </p>
               </td>
-              <td className="px-4 py-3 font-semibold text-slate-900">{row.score ?? "-"}</td>
-              <td className="px-4 py-3 text-slate-700">{row.issueCount}</td>
-              <td className="px-4 py-3 text-slate-700">{row.words ?? "-"}</td>
-              <td className="px-4 py-3 text-xs text-slate-500">{row.schemaTypes || "-"}</td>
+              <td className="px-4 py-3 font-semibold text-ink-900">{row.score ?? "-"}</td>
+              <td className="px-4 py-3 text-ink-700">{row.issueCount}</td>
+              <td className="px-4 py-3 text-ink-700">{row.words ?? "-"}</td>
+              <td className="px-4 py-3 text-xs text-ink-500">{row.schemaTypes || "-"}</td>
             </tr>
           ))}
         </tbody>
@@ -337,7 +337,7 @@ export function HistoryTab({ audits }: { audits: Audit[] }) {
   return (
     <Card className="overflow-x-auto">
       <table className="w-full min-w-[640px] text-left text-sm">
-        <thead className="border-b border-slate-200 bg-slate-50 text-xs text-slate-500 uppercase">
+        <thead className="border-b border-ink-200 bg-ink-50 text-xs text-ink-500 uppercase">
           <tr>
             <th scope="col" className="px-4 py-3 font-medium">Started</th>
             <th scope="col" className="px-4 py-3 font-medium">Type</th>
@@ -349,11 +349,11 @@ export function HistoryTab({ audits }: { audits: Audit[] }) {
             <th scope="col" className="px-4 py-3 font-medium"><span className="sr-only">Export</span></th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-ink-100">
           {audits.map((audit) => (
             <tr key={audit.id}>
-              <td className="px-4 py-3 whitespace-nowrap text-slate-700">{formatDateTime(audit.startedAt ?? audit.queuedAt)}</td>
-              <td className="px-4 py-3 text-slate-700">{TRIGGER_LABEL[audit.trigger] ?? audit.trigger}</td>
+              <td className="px-4 py-3 whitespace-nowrap text-ink-700">{formatDateTime(audit.startedAt ?? audit.queuedAt)}</td>
+              <td className="px-4 py-3 text-ink-700">{TRIGGER_LABEL[audit.trigger] ?? audit.trigger}</td>
               <td className="px-4 py-3">
                 <Badge
                   tone={
@@ -364,13 +364,13 @@ export function HistoryTab({ audits }: { audits: Audit[] }) {
                 </Badge>
                 {audit.error && audit.status === "failed" && <p className="mt-1 max-w-xs text-xs text-rose-600">{audit.error}</p>}
               </td>
-              <td className="px-4 py-3 font-semibold text-slate-900">{audit.score ?? "-"}</td>
-              <td className="px-4 py-3 text-slate-700">{audit.pagesCrawled}</td>
-              <td className="px-4 py-3 text-slate-700">{audit.issuesHigh + audit.issuesMedium + audit.issuesLow}</td>
-              <td className="px-4 py-3 text-slate-700">{formatDuration(audit.startedAt, audit.finishedAt)}</td>
+              <td className="px-4 py-3 font-semibold text-ink-900">{audit.score ?? "-"}</td>
+              <td className="px-4 py-3 text-ink-700">{audit.pagesCrawled}</td>
+              <td className="px-4 py-3 text-ink-700">{audit.issuesHigh + audit.issuesMedium + audit.issuesLow}</td>
+              <td className="px-4 py-3 text-ink-700">{formatDuration(audit.startedAt, audit.finishedAt)}</td>
               <td className="px-4 py-3 text-right">
                 {audit.status === "completed" && (
-                  <a href={`/api/audits/${audit.id}/export`} download className="text-xs font-medium text-indigo-600 hover:underline">
+                  <a href={`/api/audits/${audit.id}/export`} download className="text-xs font-medium text-aurora-600 hover:underline">
                     CSV
                   </a>
                 )}

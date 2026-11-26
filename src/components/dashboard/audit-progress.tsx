@@ -112,16 +112,16 @@ export function AuditProgress({
 
   return (
     <Card className="overflow-hidden">
-      <div className="h-1.5 w-full overflow-hidden bg-slate-100">
+      <div className="h-1.5 w-full overflow-hidden bg-ink-100">
         <div
-          className="h-full bg-indigo-600 transition-all duration-500 ease-out"
+          className="h-full bg-aurora-600 transition-all duration-500 ease-out"
           style={{ width: `${Math.min(100, percentage)}%` }}
         />
       </div>
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between p-5">
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-900">
+            <span className="font-semibold text-ink-900">
               {status === "queued"
                 ? "Audit queued"
                 : status === "running"
@@ -134,27 +134,27 @@ export function AuditProgress({
                   ? "text-xs font-medium rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 px-1.5 py-0.5"
                   : tone === "red"
                     ? "text-xs font-medium rounded-full bg-rose-100 text-rose-800 border border-rose-200 px-1.5 py-0.5"
-                    : "text-xs font-medium rounded-full bg-slate-100 text-slate-600 border border-slate-200 px-1.5 py-0.5"
+                    : "text-xs font-medium rounded-full bg-ink-100 text-ink-600 border border-ink-200 px-1.5 py-0.5"
               }
             >
               {status}
             </span>
             {done && data.finishedAt && data.startedAt && (
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-ink-500">
                 · finished {formatDuration(new Date(data.startedAt), new Date(data.finishedAt))}
               </span>
             )}
           </div>
-          <p className="text-sm text-slate-600">{stage}</p>
+          <p className="text-sm text-ink-600">{stage}</p>
           {!done && maxPages > 0 && (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-ink-500">
               {pagesCrawled} / {maxPages} pages crawled
             </p>
           )}
         </div>
         <div className="text-right hidden sm:block">
-          <span className="text-lg font-bold text-slate-900">{percentage}%</span>
-          {elapsedText && !done && <p className="text-xs text-slate-500 mt-0.5">{elapsedText}</p>}
+          <span className="text-lg font-bold text-ink-900">{percentage}%</span>
+          {elapsedText && !done && <p className="text-xs text-ink-500 mt-0.5">{elapsedText}</p>}
         </div>
       </div>
     </Card>

@@ -62,8 +62,8 @@ async function BillingView() {
     <div className="space-y-6">
       <Card className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="font-semibold text-slate-900">Payment methods &amp; invoices</h2>
-          <p className="mt-1 text-sm text-slate-600">
+          <h2 className="font-semibold text-ink-900">Payment methods &amp; invoices</h2>
+          <p className="mt-1 text-sm text-ink-600">
             Update your card, download invoices or cancel subscriptions in the secure customer portal.
           </p>
         </div>
@@ -92,7 +92,7 @@ async function BillingView() {
       ) : (
         <Card className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs text-slate-500 uppercase">
+            <thead className="border-b border-ink-200 bg-ink-50 text-xs text-ink-500 uppercase">
               <tr>
                 <th scope="col" className="px-4 py-3 font-medium">Website</th>
                 <th scope="col" className="px-4 py-3 font-medium">Plan</th>
@@ -101,7 +101,7 @@ async function BillingView() {
                 <th scope="col" className="px-4 py-3 font-medium">Renews</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-ink-100">
               {rows.map((row) => {
                 const plan = planForProductId(row.productId);
                 const status = SUBSCRIPTION_STATUS[row.status] ?? { label: row.status, tone: "gray" as const };
@@ -109,11 +109,11 @@ async function BillingView() {
                   <tr key={row.id}>
                     <td className="px-4 py-3">
                       {row.websiteId ? (
-                        <Link href={`/dashboard/websites/${row.websiteId}`} className="font-medium text-indigo-600 hover:underline">
+                        <Link href={`/dashboard/websites/${row.websiteId}`} className="font-medium text-aurora-600 hover:underline">
                           {row.domain}
                         </Link>
                       ) : (
-                        <span className="text-slate-500">-</span>
+                        <span className="text-ink-500">-</span>
                       )}
                       {row.isDuplicate && (
                         <Badge tone="amber" className="ml-2">
@@ -121,16 +121,16 @@ async function BillingView() {
                         </Badge>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-slate-700">{plan ? PLANS[plan].name : "-"}</td>
+                    <td className="px-4 py-3 text-ink-700">{plan ? PLANS[plan].name : "-"}</td>
                     <td className="px-4 py-3">
                       <Badge tone={status.tone}>{status.label}</Badge>
-                      {row.cancelAtPeriodEnd && <span className="ml-2 text-xs text-slate-500">cancels at period end</span>}
+                      {row.cancelAtPeriodEnd && <span className="ml-2 text-xs text-ink-500">cancels at period end</span>}
                     </td>
-                    <td className="px-4 py-3 text-slate-700">
+                    <td className="px-4 py-3 text-ink-700">
                       {formatMoney(row.recurringAmount, row.currency)}
-                      <span className="text-slate-400">/mo</span>
+                      <span className="text-ink-400">/mo</span>
                     </td>
-                    <td className="px-4 py-3 text-slate-700">
+                    <td className="px-4 py-3 text-ink-700">
                       {["active", "past_due"].includes(row.status) && !row.cancelAtPeriodEnd ? formatDate(row.nextBillingDate) : "-"}
                     </td>
                   </tr>

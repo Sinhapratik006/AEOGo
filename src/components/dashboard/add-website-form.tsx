@@ -73,9 +73,9 @@ export function AddWebsiteForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-8" noValidate>
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-base font-semibold text-slate-900">1. Your website</h2>
-        <p className="mt-1 text-sm text-slate-600">We&apos;ll audit the whole site, starting from its homepage.</p>
+      <section className="rounded-xl border border-ink-200 bg-surface p-6 shadow-sm">
+        <h2 className="text-base font-semibold text-ink-900">1. Your website</h2>
+        <p className="mt-1 text-sm text-ink-600">We&apos;ll audit the whole site, starting from its homepage.</p>
         <Field
           id="url"
           name="url"
@@ -96,15 +96,15 @@ export function AddWebsiteForm({
         />
         {existingWebsiteId && (
           <p className="mt-3 text-sm">
-            <Link href={`/dashboard/websites/${existingWebsiteId}`} className="font-semibold text-indigo-600 hover:text-indigo-500">
+            <Link href={`/dashboard/websites/${existingWebsiteId}`} className="font-semibold text-aurora-600 hover:text-aurora-500">
               Go to this website&apos;s dashboard →
             </Link>
           </p>
         )}
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-base font-semibold text-slate-900">2. Choose a plan</h2>
+      <section className="rounded-xl border border-ink-200 bg-surface p-6 shadow-sm">
+        <h2 className="text-base font-semibold text-ink-900">2. Choose a plan</h2>
         <fieldset className="mt-5">
           <legend className="sr-only">Plan</legend>
           <div className="grid gap-4 md:grid-cols-3">
@@ -113,7 +113,7 @@ export function AddWebsiteForm({
                 key={option.id}
                 className={cn(
                   "relative flex cursor-pointer flex-col rounded-xl border p-5 transition",
-                  plan === option.id ? "border-indigo-600 bg-indigo-50/40 ring-1 ring-indigo-600" : "border-slate-200 hover:border-slate-300",
+                  plan === option.id ? "border-aurora-600 bg-aurora-50/40 ring-1 ring-aurora-600" : "border-ink-200 hover:border-ink-300",
                   freeTrialUsed && option.id === "free" && "cursor-not-allowed opacity-60",
                 )}
               >
@@ -127,24 +127,24 @@ export function AddWebsiteForm({
                   className="sr-only"
                 />
                 <span className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-900">{option.name}</span>
+                  <span className="font-semibold text-ink-900">{option.name}</span>
                   {option.highlighted && <Badge tone="indigo">Popular</Badge>}
                 </span>
-                <span className="mt-2 text-2xl font-bold text-slate-900">
+                <span className="mt-2 text-2xl font-bold text-ink-900">
                   {option.priceMonthly === 0 ? "Free" : `$${option.priceMonthly}`}
-                  {option.priceMonthly > 0 && <span className="text-sm font-normal text-slate-500">/mo</span>}
+                  {option.priceMonthly > 0 && <span className="text-sm font-normal text-ink-500">/mo</span>}
                 </span>
-                <span className="mt-3 flex flex-col gap-1.5 text-sm text-slate-600">
+                <span className="mt-3 flex flex-col gap-1.5 text-sm text-ink-600">
                   <span className="flex items-center gap-2">
-                    <CheckIcon className="h-4 w-4 text-indigo-600" />
+                    <CheckIcon className="h-4 w-4 text-aurora-600" />
                     Up to {option.maxPages.toLocaleString("en-US")} pages
                   </span>
                   <span className="flex items-center gap-2">
-                    <CheckIcon className="h-4 w-4 text-indigo-600" />
+                    <CheckIcon className="h-4 w-4 text-aurora-600" />
                     {auditIntervalLabel(option.auditIntervalHours)} audits
                   </span>
                   <span className="flex items-center gap-2">
-                    <CheckIcon className="h-4 w-4 text-indigo-600" />
+                    <CheckIcon className="h-4 w-4 text-aurora-600" />
                     {option.aiDraftsPerAudit} AI fixes per audit
                   </span>
                 </span>
@@ -152,7 +152,7 @@ export function AddWebsiteForm({
             ))}
           </div>
           {freeTrialUsed && (
-            <p className="mt-4 text-sm text-slate-500">
+            <p className="mt-4 text-sm text-ink-500">
               You have already used your free trial. Please choose a paid plan to continue.
             </p>
           )}
@@ -174,9 +174,9 @@ export function AddWebsiteForm({
       )}
       <FormError message={error} />
 
-      <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-6 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-sm text-slate-600">
-          <p className="font-semibold text-slate-900">
+      <div className="flex flex-col gap-4 rounded-xl border border-ink-200 bg-ink-50 p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-sm text-ink-600">
+          <p className="font-semibold text-ink-900">
             {selected.priceMonthly === 0 ? `${selected.name} plan · Free` : `${selected.name} plan · $${selected.priceMonthly}/month`}
           </p>
           <p className="mt-1">

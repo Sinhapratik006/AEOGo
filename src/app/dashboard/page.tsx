@@ -67,19 +67,19 @@ async function WebsiteList() {
         const running = openBySite.get(site.id);
         return (
           <Link key={site.id} href={`/dashboard/websites/${site.id}`} className="group">
-            <Card className="flex h-full items-start gap-5 p-5 transition group-hover:border-indigo-300 group-hover:shadow-md">
+            <Card className="flex h-full items-start gap-5 p-5 transition group-hover:border-aurora-300 group-hover:shadow-md">
               <ScoreRing score={site.latestScore} />
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="truncate font-semibold text-slate-900">{site.domain}</h2>
+                  <h2 className="truncate font-semibold text-ink-900">{site.domain}</h2>
                   <StatusBadge status={site.status} />
                 </div>
-                <p className="mt-1 text-sm text-slate-500">{PLANS[site.plan]?.name ?? site.plan} plan</p>
-                <div className="mt-3 text-sm text-slate-600">
+                <p className="mt-1 text-sm text-ink-500">{PLANS[site.plan]?.name ?? site.plan} plan</p>
+                <div className="mt-3 text-sm text-ink-600">
                   {running ? (
                     <Badge tone="indigo">{running.status === "running" ? running.progress ?? "Audit running" : "Audit queued"}</Badge>
                   ) : site.status === "pending_payment" || site.status === "payment_failed" ? (
-                    <span className="font-medium text-indigo-600">Complete checkout to start →</span>
+                    <span className="font-medium text-aurora-600">Complete checkout to start →</span>
                   ) : isAutomationStatus(site.status) ? (
                     <span>
                       {site.lastAuditAt ? `Last audit ${relativeTime(site.lastAuditAt)}` : "First audit pending"}

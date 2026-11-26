@@ -18,7 +18,7 @@ export function GoogleButton({ href, className }: { href: string; className?: st
       type="button"
       onClick={onClick}
       disabled={pending}
-      className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-slate-300 bg-white text-slate-900 shadow-sm hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed disabled:opacity-60 px-6 py-3 text-base font-semibold transition ${className ?? ""}`}
+      className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-ink-300 bg-surface text-ink-900 shadow-sm hover:bg-ink-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-aurora-600 disabled:cursor-not-allowed disabled:opacity-60 px-6 py-3 text-base font-semibold transition ${className ?? ""}`}
     >
       {pending ? (
         <Spinner />

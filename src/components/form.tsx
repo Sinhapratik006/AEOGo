@@ -11,7 +11,7 @@ export function Field({
 }: InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string | null; hint?: ReactNode; id: string }) {
   return (
     <div className={className}>
-      <label htmlFor={id} className="block text-sm font-medium text-slate-800">
+      <label htmlFor={id} className="block text-sm font-medium text-ink-800">
         {label}
       </label>
       <input
@@ -20,9 +20,9 @@ export function Field({
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined}
         className={cn(
-          "mt-1.5 block w-full rounded-lg border-0 px-3 py-2 text-sm text-slate-900 shadow-sm ring-1 ring-inset placeholder:text-slate-400",
-          "focus:ring-2 focus:ring-inset focus:outline-none disabled:bg-slate-50",
-          error ? "ring-rose-300 focus:ring-rose-500" : "ring-slate-300 focus:ring-indigo-600",
+          "mt-1.5 block w-full rounded-lg border-0 px-3 py-2 text-sm text-ink-900 shadow-sm ring-1 ring-inset placeholder:text-ink-400",
+          "focus:ring-2 focus:ring-inset focus:outline-none disabled:bg-ink-50",
+          error ? "ring-rose-300 focus:ring-rose-500" : "ring-ink-300 focus:ring-aurora-600",
         )}
       />
       {error ? (
@@ -30,7 +30,7 @@ export function Field({
           {error}
         </p>
       ) : hint ? (
-        <p id={`${id}-hint`} className="mt-1.5 text-xs text-slate-500">
+        <p id={`${id}-hint`} className="mt-1.5 text-xs text-ink-500">
           {hint}
         </p>
       ) : null}

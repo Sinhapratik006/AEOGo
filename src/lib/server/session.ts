@@ -60,11 +60,32 @@ export async function createSession(userId: string, meta: { ip: string | null; u
   });
 }
 
+const TRANSIENT_NETWORK_CODES = new Set(["ENOTFOUND", "EAI_AGAIN", "ECONNRESET", "ETIMEDOUT", "ECONNREFUSED"]);
+
+function isTransientNetworkError(error: unknown): boolean {
+  // Drizzle wraps the driver error in DrizzleQueryError, so walk the cause chain.
+  for (let e = error as { code?: string; cause?: unknown } | undefined, i = 0; e && i < 5; e = e.cause as typeof e, i++) {
+    if (e.code && TRANSIENT_NETWORK_CODES.has(e.code)) return true;
+  }
+  return false;
+}
+
+/** Retries once after a short pause when the database host is briefly unreachable (e.g. a DNS blip). */
+async function withNetworkRetry<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (!isTransientNetworkError(error)) throw error;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    return fn();
+  }
+}
+
 export async function getSessionUser(): Promise<SessionUser | null> {
   const token = await readSessionToken();
   if (!token) return null;
   try {
-    const [row] = await getDb()
+    const [row] = await withNetworkRetry(() => getDb()
       .select({
         sessionId: sessions.id,
         id: users.id,
@@ -80,7 +101,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       .innerJoin(users, eq(users.id, sessions.userId))
       // Compare against the database clock: reading the JS clock during render isn't allowed with Cache Components.
       .where(and(eq(sessions.id, hashToken(token)), gt(sessions.expiresAt, sql`now()`)))
-      .limit(1);
+      .limit(1));
     if (!row) return null;
     return {
       sessionId: row.sessionId,

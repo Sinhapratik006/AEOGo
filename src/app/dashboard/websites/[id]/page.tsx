@@ -84,9 +84,9 @@ function HeaderActions({ site, openAudit, latestCompleted }: { site: Website; op
 function StatCard({ label, children, sub }: { label: string; children: ReactNode; sub?: ReactNode }) {
   return (
     <Card className="p-5">
-      <p className="text-sm text-slate-500">{label}</p>
-      <div className="mt-2 text-2xl font-bold text-slate-900">{children}</div>
-      {sub && <div className="mt-1 text-xs text-slate-500">{sub}</div>}
+      <p className="text-sm text-ink-500">{label}</p>
+      <div className="mt-2 text-2xl font-bold text-ink-900">{children}</div>
+      {sub && <div className="mt-1 text-xs text-ink-500">{sub}</div>}
     </Card>
   );
 }
@@ -130,15 +130,15 @@ async function WebsiteView({ params, searchParams }: Pick<PageProps<"/dashboard/
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <Link href="/dashboard" className="text-sm text-slate-500 hover:text-slate-700">
+          <Link href="/dashboard" className="text-sm text-ink-500 hover:text-ink-700">
             ← All websites
           </Link>
           <div className="mt-2 flex flex-wrap items-center gap-3">
-            <h1 className="truncate text-2xl font-bold tracking-tight text-slate-900">{site.domain}</h1>
+            <h1 className="truncate text-2xl font-bold tracking-tight text-ink-900">{site.domain}</h1>
             <StatusBadge status={site.status} />
           </div>
-          <p className="mt-1 text-sm text-slate-500">
-            <a href={site.url} target="_blank" rel="noopener noreferrer nofollow" className="hover:text-slate-700">
+          <p className="mt-1 text-sm text-ink-500">
+            <a href={site.url} target="_blank" rel="noopener noreferrer nofollow" className="hover:text-ink-700">
               {site.url}
             </a>{" "}
             · {plan.name} plan · {auditIntervalLabel(plan.auditIntervalHours)} audits, up to {plan.maxPages.toLocaleString("en-US")} pages
@@ -173,13 +173,13 @@ async function WebsiteView({ params, searchParams }: Pick<PageProps<"/dashboard/
             <Card className="flex items-center gap-4 p-5">
               <ScoreRing score={latestCompleted.score} size={72} />
               <div>
-                <p className="text-sm text-slate-500">AEO score</p>
+                <p className="text-sm text-ink-500">AEO score</p>
                 {delta !== null ? (
                   <p className="text-sm font-semibold" style={{ color: delta >= 0 ? scoreColor(100) : scoreColor(0) }}>
                     {delta >= 0 ? `+${delta}` : delta} since last audit
                   </p>
                 ) : (
-                  <p className="text-sm text-slate-500">First audit</p>
+                  <p className="text-sm text-ink-500">First audit</p>
                 )}
               </div>
             </Card>
@@ -205,7 +205,7 @@ async function WebsiteView({ params, searchParams }: Pick<PageProps<"/dashboard/
             </StatCard>
           </div>
 
-          <nav aria-label="Report sections" className="flex gap-1 overflow-x-auto border-b border-slate-200">
+          <nav aria-label="Report sections" className="flex gap-1 overflow-x-auto border-b border-ink-200">
             {TABS.map((t) => (
               <Link
                 key={t.id}
@@ -214,7 +214,7 @@ async function WebsiteView({ params, searchParams }: Pick<PageProps<"/dashboard/
                 aria-current={tab === t.id ? "page" : undefined}
                 className={cn(
                   "-mb-px border-b-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition",
-                  tab === t.id ? "border-indigo-600 text-indigo-700" : "border-transparent text-slate-500 hover:text-slate-800",
+                  tab === t.id ? "border-aurora-600 text-aurora-700" : "border-transparent text-ink-500 hover:text-ink-800",
                 )}
               >
                 {t.label}
@@ -233,7 +233,7 @@ async function WebsiteView({ params, searchParams }: Pick<PageProps<"/dashboard/
         !openAudit &&
         isAutomationStatus(site.status) &&
         !lastFailed && (
-          <Card className="p-8 text-center text-sm text-slate-600">
+          <Card className="p-8 text-center text-sm text-ink-600">
             Your first audit will start in a moment. This page updates automatically.
             <AutoRefresh intervalMs={5000} />
           </Card>
@@ -242,7 +242,7 @@ async function WebsiteView({ params, searchParams }: Pick<PageProps<"/dashboard/
 
       {!latestCompleted && auditList.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-slate-900">Audit history</h2>
+          <h2 className="text-lg font-semibold text-ink-900">Audit history</h2>
           <HistoryTab audits={auditList} />
         </section>
       )}

@@ -24,19 +24,19 @@ async function SettingsView() {
   return (
     <div className="space-y-6">
       <Card className="p-6">
-        <h2 className="font-semibold text-slate-900">Profile</h2>
-        <p className="mt-1 mb-5 text-sm text-slate-600">Signed in as {user.email}</p>
+        <h2 className="font-semibold text-ink-900">Profile</h2>
+        <p className="mt-1 mb-5 text-sm text-ink-600">Signed in as {user.email}</p>
         <NameForm initialName={user.name} />
       </Card>
       <GoogleAccountCard googleLinked={user.googleLinked} hasPassword={user.hasPassword} />
       <Card className="p-6">
-        <h2 className="mb-5 font-semibold text-slate-900">Password</h2>
+        <h2 className="mb-5 font-semibold text-ink-900">Password</h2>
         <PasswordForm />
       </Card>
       <Card className="flex items-center justify-between p-6">
         <div>
-          <h2 className="font-semibold text-slate-900">Sign out</h2>
-          <p className="mt-1 text-sm text-slate-600">Sign out of AEOGo on this device.</p>
+          <h2 className="font-semibold text-ink-900">Sign out</h2>
+          <p className="mt-1 text-sm text-ink-600">Sign out of AEOGo on this device.</p>
         </div>
         <LogoutButton className={buttonClasses("secondary", "sm")} />
       </Card>

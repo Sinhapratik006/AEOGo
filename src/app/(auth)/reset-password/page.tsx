@@ -11,8 +11,8 @@ export const metadata: Metadata = {
 export default function ResetPasswordPage({ searchParams }: PageProps<"/reset-password">) {
   return (
     <>
-      <h1 className="text-2xl font-bold tracking-tight text-slate-900">Choose a new password</h1>
-      <p className="mt-1 mb-6 text-sm text-slate-600">You&apos;ll be signed in once it&apos;s saved.</p>
+      <h1 className="text-2xl font-bold tracking-tight text-ink-900">Choose a new password</h1>
+      <p className="mt-1 mb-6 text-sm text-ink-600">You&apos;ll be signed in once it&apos;s saved.</p>
       <Suspense fallback={<AuthFormFallback />}>
         <ResetFormWithToken searchParams={searchParams} />
       </Suspense>

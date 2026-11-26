@@ -12,17 +12,17 @@ const LINKS = [
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-slate-200 bg-white">
+    <footer className="border-t border-ink-200 bg-surface">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div>
           <Logo />
-          <p className="mt-3 max-w-xs text-sm text-slate-500">
+          <p className="mt-3 max-w-xs text-sm text-ink-500">
             Automated Answer Engine Optimization. Payments securely processed by Dodo Payments.
           </p>
         </div>
         <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-2">
           {LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className="text-sm text-slate-600 hover:text-slate-900">
+            <Link key={link.href} href={link.href} className="text-sm text-ink-600 hover:text-ink-900">
               {link.label}
             </Link>
           ))}

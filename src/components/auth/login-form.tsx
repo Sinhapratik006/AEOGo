@@ -95,7 +95,7 @@ export function LoginForm({ next, error: urlError }: { next: string | null; erro
           error={fieldErrors.password ?? null}
         />
         <div className="mt-2 text-right">
-          <Link href="/forgot-password" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+          <Link href="/forgot-password" className="text-sm font-medium text-aurora-600 hover:text-aurora-500">
             Forgot your password?
           </Link>
         </div>
@@ -103,13 +103,13 @@ export function LoginForm({ next, error: urlError }: { next: string | null; erro
       <button type="submit" disabled={pending} className={buttonClasses("primary", "lg") + " w-full"}>
         {pending && <Spinner />} Sign in
       </button>
-      <p className="text-center text-xs text-slate-500">— Or continue with —</p>
+      <p className="text-center text-xs text-ink-500">— Or continue with —</p>
       <GoogleButton href={googleHref} className="w-full" />
-      <p className="text-center text-sm text-slate-600">
+      <p className="text-center text-sm text-ink-600">
         New to AEOGo?{" "}
         <Link
           href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"}
-          className="font-semibold text-indigo-600 hover:text-indigo-500"
+          className="font-semibold text-aurora-600 hover:text-aurora-500"
         >
           Create an account
         </Link>

@@ -1,5 +1,5 @@
 import "server-only";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 import { getSessionUser, type SessionUser } from "./session";
 
@@ -12,5 +12,12 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => get
 export async function requireUser(): Promise<SessionUser> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  return user;
+}
+
+/** Admin-only pages render a 404 for everyone else, so the area isn't discoverable. */
+export async function requireAdmin(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (!user.isAdmin) notFound();
   return user;
 }

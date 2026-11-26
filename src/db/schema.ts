@@ -279,6 +279,32 @@ export const webhookEvents = pgTable("webhook_events", {
   error: text("error"),
 });
 
+/**
+ * Admin-to-user messages. One row per recipient so each user has their own
+ * read state; every row from a single send (one user or a broadcast) shares a
+ * `batchId` so the admin's sent list can show it once.
+ */
+export const messages = pgTable(
+  "messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    batchId: uuid("batch_id").notNull(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // Kept nullable so messages survive if the sending admin's account is deleted.
+    senderId: uuid("sender_id").references(() => users.id, { onDelete: "set null" }),
+    subject: text("subject").notNull(),
+    body: text("body").notNull(),
+    readAt: tstz("read_at"),
+    createdAt: tstz("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("messages_user_id_idx").on(t.userId, t.createdAt),
+    index("messages_batch_id_idx").on(t.batchId),
+  ],
+);
+
 /** Fixed-window rate limit counters shared by every app instance. */
 export const rateLimits = pgTable("rate_limits", {
   key: text("key").primaryKey(),
@@ -294,3 +320,4 @@ export type Page = typeof pages.$inferSelect;
 export type Issue = typeof issues.$inferSelect;
 export type Draft = typeof drafts.$inferSelect;
 export type SubscriptionRow = typeof subscriptions.$inferSelect;
+export type Message = typeof messages.$inferSelect;

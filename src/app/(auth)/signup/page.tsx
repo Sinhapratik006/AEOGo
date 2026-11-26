@@ -15,8 +15,8 @@ export const metadata: Metadata = {
 export default function SignupPage({ searchParams }: PageProps<"/signup">) {
   return (
     <>
-      <h1 className="text-2xl font-bold tracking-tight text-slate-900">Create your account</h1>
-      <Suspense fallback={<p className="mt-1 mb-6 text-sm text-slate-600">Next, you&apos;ll add your website and choose a plan.</p>}>
+      <h1 className="text-2xl font-bold tracking-tight text-ink-900">Create your account</h1>
+      <Suspense fallback={<p className="mt-1 mb-6 text-sm text-ink-600">Next, you&apos;ll add your website and choose a plan.</p>}>
         <PlanNote searchParams={searchParams} />
       </Suspense>
       <Suspense fallback={<AuthFormFallback fields={3} />}>
@@ -29,7 +29,7 @@ export default function SignupPage({ searchParams }: PageProps<"/signup">) {
 async function PlanNote({ searchParams }: Pick<PageProps<"/signup">, "searchParams">) {
   const { plan } = await searchParams;
   return (
-    <p className="mt-1 mb-6 text-sm text-slate-600">
+    <p className="mt-1 mb-6 text-sm text-ink-600">
       {isPlanId(plan)
         ? `You picked the ${PLANS[plan].name} plan. Next, you'll add your website and check out.`
         : "Next, you'll add your website and choose a plan."}

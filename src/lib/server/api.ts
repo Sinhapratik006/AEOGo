@@ -122,6 +122,12 @@ export async function requireApiUser(): Promise<SessionUser> {
   return user;
 }
 
+export async function requireApiAdmin(): Promise<SessionUser> {
+  const user = await requireApiUser();
+  if (!user.isAdmin) throw new HttpError(404, "NOT_FOUND", "Not found.");
+  return user;
+}
+
 export function str(value: unknown, maxLength = 500): string {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }

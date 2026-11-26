@@ -8,27 +8,27 @@ export function PricingCards() {
         <div
           key={plan.id}
           className={cn(
-            "relative flex flex-col rounded-2xl border bg-white p-8 shadow-sm",
-            plan.highlighted ? "border-indigo-600 ring-1 ring-indigo-600" : "border-slate-200",
+            "reveal card-glow relative flex flex-col rounded-2xl border bg-surface p-8",
+            plan.highlighted ? "border-aurora-600 ring-1 ring-aurora-600 shadow-[0_0_60px_-20px_var(--color-aurora-600)]" : "border-ink-200",
           )}
         >
           {plan.highlighted && (
-            <Badge tone="indigo" className="absolute -top-3 left-8 bg-indigo-600 text-white ring-indigo-600">
+            <Badge tone="indigo" className="absolute -top-3 left-8 bg-aurora-600 text-on-accent ring-aurora-600">
               Most popular
             </Badge>
           )}
           {plan.id === "free" && (
-            <Badge tone="green" className="absolute -top-3 left-2 bg-emerald-500 text-white ring-emerald-500">
+            <Badge tone="green" className="absolute -top-3 left-2 bg-emerald-500 text-on-accent ring-emerald-500">
               Free
             </Badge>
           )}
-          <h3 className="text-lg font-semibold text-slate-900">{plan.name}</h3>
-          <p className="mt-1 min-h-10 text-sm text-slate-600">{plan.tagline}</p>
+          <h3 className="text-lg font-semibold text-ink-900">{plan.name}</h3>
+          <p className="mt-1 min-h-10 text-sm text-ink-600">{plan.tagline}</p>
           <p className="mt-6 flex items-baseline gap-1">
-            <span className="text-4xl font-bold tracking-tight text-slate-900">{`$${plan.priceMonthly}`}</span>
-            <span className="text-sm text-slate-500">/month per website</span>
+            <span className="text-4xl font-bold tracking-tight text-ink-900">{`$${plan.priceMonthly}`}</span>
+            <span className="text-sm text-ink-500">/month per website</span>
           </p>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-ink-500">
             {auditIntervalLabel(plan.auditIntervalHours)} audits · up to {plan.maxPages.toLocaleString("en-US")} pages
           </p>
           <ButtonLink
@@ -38,10 +38,10 @@ export function PricingCards() {
           >
             Start with {plan.name}
           </ButtonLink>
-          <ul className="mt-8 space-y-3 text-sm text-slate-700">
+          <ul className="mt-8 space-y-3 text-sm text-ink-700">
             {plan.features.map((feature) => (
               <li key={feature} className="flex gap-2.5">
-                <CheckIcon className="mt-px shrink-0 text-indigo-600" />
+                <CheckIcon className="mt-px shrink-0 text-aurora-600" />
                 {feature}
               </li>
             ))}
