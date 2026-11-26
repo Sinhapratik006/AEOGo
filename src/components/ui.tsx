@@ -12,7 +12,7 @@ type ButtonSize = "sm" | "md" | "lg";
 export function buttonClasses(variant: ButtonVariant = "primary", size: ButtonSize = "md"): string {
   const variants: Record<ButtonVariant, string> = {
     primary:
-      "btn-shine bg-aurora-600 text-on-accent shadow-[0_0_24px_-6px_var(--color-aurora-600)] hover:bg-aurora-500 hover:shadow-[0_0_36px_-4px_var(--color-aurora-600)] hover:-translate-y-0.5",
+      "btn-shine bg-aurora-600 bg-gradient-cool text-white shadow-[0_0_24px_-6px_var(--color-aurora-600)] hover:brightness-110 hover:shadow-[0_0_36px_-4px_var(--color-borealis-500)] hover:-translate-y-0.5",
     secondary:
       "bg-surface/80 text-ink-900 ring-1 ring-inset ring-ink-300 backdrop-blur hover:bg-ink-100 hover:ring-aurora-300 hover:-translate-y-0.5",
     ghost: "text-ink-700 hover:bg-ink-100 hover:text-ink-950",
@@ -58,15 +58,16 @@ export function AuroraBackdrop({ className, grid = false }: { className?: string
     <div aria-hidden="true" className={cn("pointer-events-none absolute inset-0 -z-10 overflow-hidden", className)}>
       <div className="animate-aurora-1 absolute -top-1/3 left-[-10%] h-[70%] w-[65%] rounded-full bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--color-aurora-600)_38%,transparent),transparent)] blur-3xl" />
       <div className="animate-aurora-2 absolute -top-1/4 right-[-15%] h-[65%] w-[60%] rounded-full bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--color-borealis-500)_30%,transparent),transparent)] blur-3xl" />
-      <div className="animate-aurora-3 absolute top-1/4 left-1/4 h-[55%] w-[50%] rounded-full bg-[radial-gradient(closest-side,color-mix(in_oklab,#7c3aed_16%,transparent),transparent)] blur-3xl" />
+      <div className="animate-aurora-3 absolute top-1/4 left-1/4 h-[55%] w-[50%] rounded-full bg-[radial-gradient(closest-side,color-mix(in_oklab,#6366f1_20%,transparent),transparent)] blur-3xl" />
       {grid && <div className="bg-grid absolute inset-0" />}
     </div>
   );
 }
 
-type Tone = "gray" | "green" | "amber" | "red" | "indigo" | "blue";
+type Tone = "gray" | "green" | "active" | "amber" | "red" | "indigo" | "blue";
 const TONES: Record<Tone, string> = {
   gray: "bg-ink-100 text-ink-700 ring-ink-200",
+  active: "bg-green-50 text-green-700 ring-green-200",
   green: "bg-emerald-50 text-emerald-700 ring-emerald-200",
   amber: "bg-amber-50 text-amber-800 ring-amber-200",
   red: "bg-rose-50 text-rose-700 ring-rose-200",
@@ -90,7 +91,7 @@ export function Badge({ tone = "gray", children, className }: { tone?: Tone; chi
 
 const STATUS_LABELS: Record<WebsiteStatus, { label: string; tone: Tone }> = {
   pending_payment: { label: "Awaiting payment", tone: "amber" },
-  active: { label: "Active", tone: "green" },
+  active: { label: "Active", tone: "active" },
   past_due: { label: "Payment overdue", tone: "amber" },
   on_hold: { label: "On hold", tone: "red" },
   paused: { label: "Paused", tone: "gray" },
@@ -110,7 +111,7 @@ export function SeverityBadge({ severity }: { severity: Severity }) {
 }
 
 export function scoreColor(score: number): string {
-  if (score >= 80) return "#2df5a3";
+  if (score >= 80) return "#4f9dff";
   if (score >= 50) return "#fbbf24";
   return "#fb7185";
 }

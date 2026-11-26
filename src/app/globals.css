@@ -6,65 +6,65 @@
 }
 
 /*
- * Black + aurora green theme.
+ * Deep navy + electric blue theme.
  *
  * - `canvas` is the page background, `surface` is a card on top of it.
  * - `ink-*` is the neutral scale for a dark UI: low numbers are dark surfaces
  *   and borders, high numbers are light text (ink-900 = primary text).
- * - `aurora-*` is the brand green and `borealis-*` its teal companion. Like
+ * - `aurora-*` is the brand blue and `borealis-*` its cyan companion. Like
  *   ink, 50-200 are dark tints (tinted backgrounds/rings) and 600+ are bright.
  * - `on-accent` is text placed on a bright aurora fill.
  * - emerald/rose/amber/sky are overridden with the same dark-first ordering so
  *   status badges and notices (bg-*-50, text-*-700) read correctly on black.
  */
 @theme {
-  --color-canvas: #030605;
-  --color-surface: #080d0b;
-  --color-on-accent: #02130b;
+  --color-canvas: #030617;
+  --color-surface: #070c1f;
+  --color-on-accent: #020617;
 
-  --color-ink-50: #0c1311;
-  --color-ink-100: #111a17;
-  --color-ink-200: #1b2723;
-  --color-ink-300: #2a3a34;
-  --color-ink-400: #5d7169;
-  --color-ink-500: #8a9c95;
-  --color-ink-600: #a8b8b1;
-  --color-ink-700: #c3d1cb;
-  --color-ink-800: #dae5e0;
-  --color-ink-900: #eef6f2;
+  --color-ink-50: #0b1226;
+  --color-ink-100: #101a33;
+  --color-ink-200: #1a2747;
+  --color-ink-300: #283a63;
+  --color-ink-400: #5a6d96;
+  --color-ink-500: #8796b8;
+  --color-ink-600: #a7b4d1;
+  --color-ink-700: #c3cde4;
+  --color-ink-800: #dbe2f2;
+  --color-ink-900: #eef2fb;
   --color-ink-950: #ffffff;
 
-  --color-aurora-50: #03170f;
-  --color-aurora-100: #052619;
-  --color-aurora-200: #0a3d28;
-  --color-aurora-300: #14774c;
-  --color-aurora-400: #1fd890;
-  --color-aurora-500: #5effbf;
-  --color-aurora-600: #2df5a3;
-  --color-aurora-700: #6bffc6;
-  --color-aurora-800: #a3ffdb;
-  --color-aurora-900: #d2ffee;
-  --color-aurora-950: #ecfff7;
+  --color-aurora-50: #050f2b;
+  --color-aurora-100: #081842;
+  --color-aurora-200: #0e2a6b;
+  --color-aurora-300: #1d4fc4;
+  --color-aurora-400: #3b82f6;
+  --color-aurora-500: #7fb2ff;
+  --color-aurora-600: #4f9dff;
+  --color-aurora-700: #8cc0ff;
+  --color-aurora-800: #b8d8ff;
+  --color-aurora-900: #dcebff;
+  --color-aurora-950: #eef5ff;
 
-  --color-borealis-50: #031414;
-  --color-borealis-100: #052424;
-  --color-borealis-200: #083d3c;
-  --color-borealis-300: #0f6f6c;
-  --color-borealis-400: #18c8c0;
-  --color-borealis-500: #22e6dc;
-  --color-borealis-600: #1fd6d0;
-  --color-borealis-700: #6ff0ea;
-  --color-borealis-800: #a6f7f3;
-  --color-borealis-900: #d3fbf9;
+  --color-borealis-50: #03121c;
+  --color-borealis-100: #05202f;
+  --color-borealis-200: #083a52;
+  --color-borealis-300: #0e6a8f;
+  --color-borealis-400: #06b6d4;
+  --color-borealis-500: #22d3ee;
+  --color-borealis-600: #38bdf8;
+  --color-borealis-700: #7ee6fb;
+  --color-borealis-800: #b0f0fd;
+  --color-borealis-900: #d9f8fe;
 
-  --color-emerald-50: #04170f;
-  --color-emerald-100: #062419;
-  --color-emerald-200: #0d3b28;
-  --color-emerald-500: #10d98a;
-  --color-emerald-600: #34e8a0;
-  --color-emerald-700: #6ef2bd;
-  --color-emerald-800: #9af6d2;
-  --color-emerald-900: #c6fbe6;
+  --color-emerald-50: #04121f;
+  --color-emerald-100: #061d31;
+  --color-emerald-200: #0b3552;
+  --color-emerald-500: #38bdf8;
+  --color-emerald-600: #5cc8ff;
+  --color-emerald-700: #93dbff;
+  --color-emerald-800: #bde9ff;
+  --color-emerald-900: #e0f4ff;
 
   --color-rose-50: #1c0709;
   --color-rose-100: #2a0b10;
@@ -84,6 +84,11 @@
   --color-amber-700: #fcd34d;
   --color-amber-800: #fde68a;
   --color-amber-900: #fef3c7;
+
+  /* Green is reserved for the "Active" website status badge. */
+  --color-green-50: #041a0e;
+  --color-green-200: #14532d;
+  --color-green-700: #4ade80;
 
   --color-sky-50: #04131c;
   --color-sky-200: #0c3a52;
@@ -212,7 +217,7 @@ body {
     100deg,
     var(--color-aurora-600) 0%,
     var(--color-borealis-500) 25%,
-    var(--color-aurora-800) 50%,
+    #818cf8 50%,
     var(--color-borealis-500) 75%,
     var(--color-aurora-600) 100%
   );
@@ -236,6 +241,11 @@ body {
   box-shadow:
     0 0 0 1px color-mix(in oklab, var(--color-aurora-600) 15%, transparent),
     0 18px 40px -18px color-mix(in oklab, var(--color-aurora-600) 45%, transparent);
+}
+
+/* Cool blue gradient fill for primary buttons. */
+.bg-gradient-cool {
+  background-image: linear-gradient(120deg, #2563eb 0%, var(--color-aurora-600) 45%, var(--color-borealis-500) 100%);
 }
 
 /* Light sweep across primary buttons on hover. */
