@@ -1,5 +1,15 @@
 import { appUrl } from "./env";
 
+const EMAIL_FORMAT_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Client-safe email format validation. The server-side `isValidEmail` in
+ * `src/lib/server/api.ts` is re-exported from here, so there is one source of truth.
+ */
+export function isValidEmail(email: string): boolean {
+  return email.length <= 254 && EMAIL_FORMAT_RE.test(email);
+}
+
 interface EmailMessage {
   to: string;
   subject: string;
