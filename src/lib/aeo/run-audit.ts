@@ -7,6 +7,7 @@ import { auditReadyEmail, sendEmailSafely } from "../email";
 import { envInt } from "../env";
 import { PLANS, type Plan } from "../plans";
 import { AiAuthError, aiEnabled, draftMetadata } from "./ai-drafts";
+import { aiProviderLabel } from "./ai-provider";
 import type { IssueInput } from "./analyze";
 import { crawlSite, type CrawlResult } from "./crawl";
 import { AEO_CODES } from "./issues";
@@ -38,7 +39,7 @@ async function runVisibility(website: Website, plan: Plan, crawl: CrawlResult, b
     console.error(`[audit] visibility check for ${website.domain} failed`, err);
     return {
       status: "failed",
-      error: err instanceof AiAuthError ? "Anthropic rejected the API key. Check ANTHROPIC_API_KEY." : (err as Error).message,
+      error: err instanceof AiAuthError ? `${aiProviderLabel().name} rejected the API key. Check ${aiProviderLabel().keyVar}.` : (err as Error).message,
       checkedAt: new Date().toISOString(),
       brand: "",
       offering: "",
@@ -457,7 +458,7 @@ async function writeMetaDrafts(auditId: string, website: Website, plan: Plan, cr
       if (!(await beat(crawl.pagesCrawled, `Writing AI fixes (${created}/${todo.length})`))) stop = true;
     } catch (err) {
       if (err instanceof AiAuthError) {
-        console.error("[audit] Anthropic rejected the API key; skipping AI fixes. Check ANTHROPIC_API_KEY.");
+        console.error(`[audit] ${aiProviderLabel().name} rejected the API key; skipping AI fixes. Check ${aiProviderLabel().keyVar}.`);
         stop = true;
         return;
       }

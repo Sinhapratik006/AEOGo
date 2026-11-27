@@ -51,7 +51,7 @@ async function main() {
   const { getDb, closeDb } = await import("../src/db");
   const { runAudit } = await import("../src/lib/aeo/run-audit");
   const { envInt } = await import("../src/lib/env");
-  const { aiEnabled, aiModel } = await import("../src/lib/aeo/ai-drafts");
+  const { aiEnabled, aiModel, aiProvider } = await import("../src/lib/aeo/ai-drafts");
 
   const db = getDb();
   const concurrency = Math.max(1, envInt("WORKER_CONCURRENCY", 2));
@@ -64,7 +64,7 @@ async function main() {
   await waitForDb(db);
   console.log(
     `[worker] ${WORKER_ID} started: concurrency=${concurrency}, ` +
-      `AI fixes=${aiEnabled() ? `on (${aiModel()})` : "off (ANTHROPIC_API_KEY not set)"}`,
+      `AI fixes=${aiEnabled() ? `on (${aiProvider()}: ${aiModel()})` : "off (ANTHROPIC_API_KEY / OPENAI_API_KEY not set)"}`,
   );
 
   async function claimNextAudit(): Promise<string | null> {

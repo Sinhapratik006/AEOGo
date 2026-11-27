@@ -1,20 +1,8 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { aiModel, aiProvider, anthropicClient, openAiClient, openAiSupportsReasoning, rethrowAiError } from "./ai-provider";
 
-export function aiEnabled(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
-}
+export { AiAuthError, aiEnabled, aiModel, aiProvider } from "./ai-provider";
 
-export function aiModel(): string {
-  return process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5";
-}
-
-let client: Anthropic | null = null;
-function getClient(): Anthropic {
-  if (!client) {
-    client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 3, timeout: 60_000 });
-  }
-  return client;
-}
+const CLIENT_OPTS = { maxRetries: 3, timeout: 60_000 };
 
 const SYSTEM_PROMPT = `You write SEO and AEO (answer engine optimization) metadata for one web page.
 
@@ -46,43 +34,27 @@ export interface MetaDraft {
   rationale: string;
 }
 
-export class AiAuthError extends Error {}
-
-/** Asks Claude for an improved title and meta description grounded in the page text. */
+/** Asks the configured AI model for an improved title and meta description grounded in the page text. */
 export async function draftMetadata(page: {
   url: string;
   title: string;
   description: string;
   text: string;
 }): Promise<MetaDraft> {
-  let response;
+  const userContent =
+    `URL: ${page.url}\n` +
+    `Current title: ${page.title || "(none)"}\n` +
+    `Current description: ${page.description || "(none)"}\n\n` +
+    `<page_content>\n${page.text.slice(0, 6000)}\n</page_content>`;
+
+  let text: string;
   try {
-    response = await getClient().messages.create({
-      model: aiModel(),
-      max_tokens: 800,
-      system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content:
-            `URL: ${page.url}\n` +
-            `Current title: ${page.title || "(none)"}\n` +
-            `Current description: ${page.description || "(none)"}\n\n` +
-            `<page_content>\n${page.text.slice(0, 6000)}\n</page_content>`,
-        },
-      ],
-      output_config: { format: { type: "json_schema", schema: OUTPUT_SCHEMA } },
-    });
+    text = aiProvider() === "openai" ? await draftWithOpenAi(userContent) : await draftWithAnthropic(userContent);
   } catch (err) {
-    if (err instanceof Anthropic.AuthenticationError || err instanceof Anthropic.PermissionDeniedError) {
-      throw new AiAuthError(err.message);
-    }
-    throw err;
+    rethrowAiError(err);
   }
 
-  const block = response.content.find((b) => b.type === "text");
-  if (!block || block.type !== "text") throw new Error(`Model returned no text (stop reason: ${response.stop_reason})`);
-  const data = JSON.parse(block.text) as Record<string, unknown>;
+  const data = JSON.parse(text) as Record<string, unknown>;
   const title = typeof data.title === "string" ? data.title.trim() : "";
   const description = typeof data.description === "string" ? data.description.trim() : "";
   if (!title || !description) throw new Error("Model returned an empty title or description");
@@ -94,4 +66,30 @@ export async function draftMetadata(page: {
       : [],
     rationale: typeof data.rationale === "string" ? data.rationale.trim() : "",
   };
+}
+
+async function draftWithAnthropic(userContent: string): Promise<string> {
+  const response = await anthropicClient(CLIENT_OPTS).messages.create({
+    model: aiModel(),
+    max_tokens: 800,
+    system: SYSTEM_PROMPT,
+    messages: [{ role: "user", content: userContent }],
+    output_config: { format: { type: "json_schema", schema: OUTPUT_SCHEMA } },
+  });
+  const block = response.content.find((b) => b.type === "text");
+  if (!block || block.type !== "text") throw new Error(`Model returned no text (stop reason: ${response.stop_reason})`);
+  return block.text;
+}
+
+async function draftWithOpenAi(userContent: string): Promise<string> {
+  const response = await openAiClient(CLIENT_OPTS).responses.create({
+    model: aiModel(),
+    max_output_tokens: 4000,
+    ...(openAiSupportsReasoning(aiModel()) ? { reasoning: { effort: "low" as const } } : {}),
+    instructions: SYSTEM_PROMPT,
+    input: userContent,
+    text: { format: { type: "json_schema", name: "meta_draft", schema: OUTPUT_SCHEMA, strict: true } },
+  });
+  if (!response.output_text) throw new Error(`Model returned no text (status: ${response.status})`);
+  return response.output_text;
 }

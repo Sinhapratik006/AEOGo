@@ -218,7 +218,7 @@ export async function FixesTab({ websiteId, hasCompletedAudit }: { websiteId: st
 function AiDisabledNotice() {
   return (
     <Notice tone="amber" title="AI-written fixes are off (shown in development only)">
-      Set ANTHROPIC_API_KEY to generate title and description fixes. robots.txt, llms.txt and schema fixes work without it.
+      Set ANTHROPIC_API_KEY or OPENAI_API_KEY to generate title and description fixes. robots.txt, llms.txt and schema fixes work without it.
     </Notice>
   );
 }

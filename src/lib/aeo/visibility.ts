@@ -1,6 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
-import type { BetaContentBlock, BetaContentBlockParam, BetaMessage, MessageCreateParamsNonStreaming } from "@anthropic-ai/sdk/resources/beta/messages/messages";
-import { AiAuthError, aiEnabled, aiModel } from "./ai-drafts";
+import type { BetaContentBlock, BetaContentBlockParam, BetaMessageParam } from "@anthropic-ai/sdk/resources/beta/messages/messages";
+import type { ResponseCreateParamsNonStreaming } from "openai/resources/responses/responses";
+import { AI_KEY_HINT, AiAuthError, aiEnabled, aiModel, aiProvider, anthropicClient, openAiClient, openAiSupportsReasoning, rethrowAiError } from "./ai-provider";
 
 /*
  * Real-world visibility: instead of inspecting HTML, ask an AI assistant (with live web search)
@@ -61,40 +61,103 @@ export interface SiteContext {
   pages: Array<{ url: string; title: string; description: string }>;
 }
 
-let client: Anthropic | null = null;
-function getClient(): Anthropic {
-  if (!client) client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 1, timeout: 150_000 });
-  return client;
-}
+const CLIENT_OPTS = { maxRetries: 1, timeout: 150_000 };
 
 /** Models that accept server-side refusal fallbacks. */
 const FALLBACK_MODELS = new Set(["claude-fable-5-2", "claude-fable-5-1", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5"]);
 const MAX_PAUSE_RESUMES = 3;
 const QUESTION_CONCURRENCY = 3;
 
-type Params = Omit<MessageCreateParamsNonStreaming, "model">;
+/** A provider-neutral request. */
+interface AskParams {
+  system?: string;
+  user: string;
+  maxTokens: number;
+  effort: "low" | "medium" | "high";
+  /** Structured JSON output matching this schema. */
+  schema?: { name: string; schema: Record<string, unknown> };
+  /** Let the model search the web. */
+  webSearch?: boolean;
+}
 
-/** One request (resuming server-tool pauses), with refusal fallbacks where the model supports them. */
-async function ask(params: Params): Promise<BetaMessage> {
+/** A provider-neutral answer: the text plus the web sources the model read and cited. */
+interface AskResult {
+  text: string;
+  results: CitedSource[];
+  cited: CitedSource[];
+}
+
+async function ask(params: AskParams): Promise<AskResult> {
+  try {
+    return aiProvider() === "openai" ? await askOpenAi(params) : await askAnthropic(params);
+  } catch (err) {
+    rethrowAiError(err);
+  }
+}
+
+/** One Claude request (resuming server-tool pauses), with refusal fallbacks where the model supports them. */
+async function askAnthropic(params: AskParams): Promise<AskResult> {
   const model = aiModel();
   const fallback = FALLBACK_MODELS.has(model)
     ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const }
     : {};
-  const messages = [...params.messages];
-  try {
-    for (let attempt = 0; ; attempt++) {
-      const response = await getClient().beta.messages.create({ ...params, ...fallback, model, messages });
-      if (response.stop_reason === "refusal") throw new Error("The model declined this request");
-      if (response.stop_reason !== "pause_turn" || attempt >= MAX_PAUSE_RESUMES) return response;
-      // Long web-search turns pause; send the partial turn back and the server resumes it.
-      messages.push({ role: "assistant", content: response.content as unknown as BetaContentBlockParam[] });
+  const messages: BetaMessageParam[] = [{ role: "user", content: params.user }];
+  const request = {
+    max_tokens: params.maxTokens,
+    ...(params.system ? { system: params.system } : {}),
+    ...(params.webSearch ? { tools: [WEB_SEARCH] } : {}),
+    output_config: {
+      effort: params.effort,
+      ...(params.schema ? { format: { type: "json_schema" as const, schema: params.schema.schema } } : {}),
+    },
+  };
+  for (let attempt = 0; ; attempt++) {
+    const response = await anthropicClient(CLIENT_OPTS).beta.messages.create({ ...request, ...fallback, model, messages });
+    if (response.stop_reason === "refusal") throw new Error("The model declined this request");
+    if (response.stop_reason !== "pause_turn" || attempt >= MAX_PAUSE_RESUMES) {
+      return { text: textOf(response.content), ...anthropicSources(response.content) };
     }
-  } catch (err) {
-    if (err instanceof Anthropic.AuthenticationError || err instanceof Anthropic.PermissionDeniedError) {
-      throw new AiAuthError(err.message);
-    }
-    throw err;
+    // Long web-search turns pause; send the partial turn back and the server resumes it.
+    messages.push({ role: "assistant", content: response.content as unknown as BetaContentBlockParam[] });
   }
+}
+
+/** One OpenAI Responses API request. */
+async function askOpenAi(params: AskParams): Promise<AskResult> {
+  const request: ResponseCreateParamsNonStreaming = {
+    model: aiModel(),
+    // Reasoning tokens count toward the output limit, so leave headroom.
+    max_output_tokens: params.maxTokens * 2,
+    ...(openAiSupportsReasoning(aiModel()) ? { reasoning: { effort: params.effort } } : {}),
+    input: params.user,
+    ...(params.system ? { instructions: params.system } : {}),
+    ...(params.webSearch ? { tools: [{ type: "web_search" }], include: ["web_search_call.action.sources"] } : {}),
+    ...(params.schema
+      ? { text: { format: { type: "json_schema", name: params.schema.name, schema: params.schema.schema, strict: true } } }
+      : {}),
+  };
+  const response = await openAiClient(CLIENT_OPTS).responses.create(request);
+  if (response.error) throw new Error(response.error.message);
+
+  const results: CitedSource[] = [];
+  const cited: CitedSource[] = [];
+  for (const item of response.output) {
+    if (item.type === "web_search_call" && item.action?.type === "search") {
+      for (const s of item.action.sources ?? []) results.push({ domain: bareDomain(s.url), url: s.url, title: "" });
+    }
+    if (item.type === "message") {
+      for (const part of item.content) {
+        if (part.type === "refusal") throw new Error("The model declined this request");
+        if (part.type !== "output_text") continue;
+        for (const a of part.annotations) {
+          if (a.type === "url_citation") cited.push({ domain: bareDomain(a.url), url: a.url, title: a.title ?? "" });
+        }
+      }
+    }
+  }
+  const text = response.output_text.trim();
+  if (!text) throw new Error(`Model returned no text (status: ${response.status})`);
+  return { text, results, cited };
 }
 
 function textOf(content: BetaContentBlock[]): string {
@@ -104,8 +167,8 @@ function textOf(content: BetaContentBlock[]): string {
     .trim();
 }
 
-function json<T>(response: BetaMessage): T {
-  return JSON.parse(textOf(response.content)) as T;
+function json<T>(response: AskResult): T {
+  return JSON.parse(response.text) as T;
 }
 
 export function bareDomain(url: string): string {
@@ -122,7 +185,7 @@ function isSite(url: string, siteDomain: string): boolean {
 }
 
 /** URLs the AI read (search results) and URLs it cited in its answer. */
-function sources(content: BetaContentBlock[]): { results: CitedSource[]; cited: CitedSource[] } {
+function anthropicSources(content: BetaContentBlock[]): { results: CitedSource[]; cited: CitedSource[] } {
   const results: CitedSource[] = [];
   const cited: CitedSource[] = [];
   for (const block of content) {
@@ -161,21 +224,19 @@ async function understandSite(site: SiteContext, count: number): Promise<{ brand
     .map((p) => `- ${p.title || p.url}${p.description ? `: ${p.description}` : ""}`)
     .join("\n");
   const response = await ask({
-    max_tokens: 4000,
-    output_config: {
-      effort: "medium",
-      format: {
-        type: "json_schema",
-        schema: {
-          type: "object",
-          properties: {
-            brand: { type: "string" },
-            offering: { type: "string" },
-            questions: { type: "array", items: { type: "string" } },
-          },
-          required: ["brand", "offering", "questions"],
-          additionalProperties: false,
+    maxTokens: 4000,
+    effort: "medium",
+    schema: {
+      name: "site_understanding",
+      schema: {
+        type: "object",
+        properties: {
+          brand: { type: "string" },
+          offering: { type: "string" },
+          questions: { type: "array", items: { type: "string" } },
         },
+        required: ["brand", "offering", "questions"],
+        additionalProperties: false,
       },
     },
     system: `You help a business measure whether AI assistants recommend it. ${UNTRUSTED}
@@ -184,12 +245,7 @@ From the website, determine:
 - brand: the business or product name as people would search for it.
 - offering: one sentence on what it sells or provides, to whom, and where (if it is local).
 - questions: exactly ${count} questions a potential customer would type into ChatGPT, Perplexity or Google AI Mode when they need what this business offers but don't know the brand yet. Never mention the brand. Write them the way real people ask: mostly "best/top X for Y", "where can I get X in <place>", "X vs Y", and practical "how do I choose X" questions. Keep them specific to this business's actual niche and location, not generic.`,
-    messages: [
-      {
-        role: "user",
-        content: `Site: ${site.origin}\nTitle: ${site.homepageTitle}\nDescription: ${site.homepageDescription}\n\nPages:\n${pageList}\n\n<homepage_text>\n${site.homepageText.slice(0, 5000)}\n</homepage_text>`,
-      },
-    ],
+    user: `Site: ${site.origin}\nTitle: ${site.homepageTitle}\nDescription: ${site.homepageDescription}\n\nPages:\n${pageList}\n\n<homepage_text>\n${site.homepageText.slice(0, 5000)}\n</homepage_text>`,
   });
   const data = json<{ brand: string; offering: string; questions: string[] }>(response);
   const questions = data.questions.map((q) => q.trim()).filter(Boolean).slice(0, count);
@@ -199,22 +255,20 @@ From the website, determine:
 
 async function checkBrandKnowledge(brand: string, domain: string): Promise<{ knows: boolean; summary: string }> {
   const response = await ask({
-    max_tokens: 2000,
-    output_config: {
-      effort: "low",
-      format: {
-        type: "json_schema",
-        schema: {
-          type: "object",
-          properties: { knows: { type: "boolean" }, summary: { type: "string" } },
-          required: ["knows", "summary"],
-          additionalProperties: false,
-        },
+    maxTokens: 2000,
+    effort: "low",
+    schema: {
+      name: "brand_knowledge",
+      schema: {
+        type: "object",
+        properties: { knows: { type: "boolean" }, summary: { type: "string" } },
+        required: ["knows", "summary"],
+        additionalProperties: false,
       },
     },
     system:
       "Answer only from your own training knowledge; you cannot browse. Set knows to true only if you genuinely recognize this specific business or website and can say something concrete about it. Do not guess from the name or domain. summary: what you know in 1-2 sentences, or why you don't recognize it.",
-    messages: [{ role: "user", content: `What do you know about "${brand}" (${domain})?` }],
+    user: `What do you know about "${brand}" (${domain})?`,
   });
   return json<{ knows: boolean; summary: string }>(response);
 }
@@ -222,34 +276,32 @@ async function checkBrandKnowledge(brand: string, domain: string): Promise<{ kno
 const WEB_SEARCH = { type: "web_search_20260209", name: "web_search", max_uses: 3 } as const;
 
 async function checkBrandSearch(brand: string, domain: string): Promise<{ found: boolean; results: CitedSource[] }> {
-  const response = await ask({
-    max_tokens: 4000,
-    output_config: { effort: "low" },
-    tools: [WEB_SEARCH],
-    messages: [{ role: "user", content: `Search the web for "${brand}" and tell me in two sentences what it is.` }],
+  const { results, cited } = await ask({
+    maxTokens: 4000,
+    effort: "low",
+    webSearch: true,
+    user: `Search the web for "${brand}" and tell me in two sentences what it is.`,
   });
-  const { results, cited } = sources(response.content);
   const all = [...results, ...cited];
   return { found: all.some((s) => isSite(s.url, domain)), results: rankSources(all, "", 6) };
 }
 
 async function askQuestion(question: string, domain: string): Promise<QuestionResult> {
   try {
-    const response = await ask({
-      max_tokens: 6000,
-      output_config: { effort: "low" },
-      tools: [WEB_SEARCH],
+    const { text, results, cited } = await ask({
+      maxTokens: 6000,
+      effort: "low",
+      webSearch: true,
       system:
         "You are a helpful AI assistant. Search the web, then answer concisely and recommend specific businesses, products or websites by name where relevant, citing your sources.",
-      messages: [{ role: "user", content: question }],
+      user: question,
     });
-    const { results, cited } = sources(response.content);
     return {
       question,
       cited: cited.some((s) => isSite(s.url, domain)),
       inResults: results.some((s) => isSite(s.url, domain)),
       citedInstead: rankSources(cited.length ? cited : results, domain, 5),
-      answer: textOf(response.content).slice(0, 600),
+      answer: text.slice(0, 600),
     };
   } catch (err) {
     if (err instanceof AiAuthError) throw err;
@@ -279,33 +331,31 @@ async function buildActionPlan(
     existing_pages: site.pages.slice(0, 60).map((p) => ({ url: p.url, title: p.title })),
   };
   const response = await ask({
-    max_tokens: 12000,
-    output_config: {
-      effort: "high",
-      format: {
-        type: "json_schema",
-        schema: {
-          type: "object",
-          properties: {
-            actions: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  priority: { type: "integer", enum: [1, 2, 3] },
-                  kind: { type: "string", enum: ["indexing", "content", "offsite", "brand"] },
-                  title: { type: "string" },
-                  why: { type: "string" },
-                  steps: { type: "array", items: { type: "string" } },
-                },
-                required: ["priority", "kind", "title", "why", "steps"],
-                additionalProperties: false,
+    maxTokens: 12000,
+    effort: "high",
+    schema: {
+      name: "action_plan",
+      schema: {
+        type: "object",
+        properties: {
+          actions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                priority: { type: "integer", enum: [1, 2, 3] },
+                kind: { type: "string", enum: ["indexing", "content", "offsite", "brand"] },
+                title: { type: "string" },
+                why: { type: "string" },
+                steps: { type: "array", items: { type: "string" } },
               },
+              required: ["priority", "kind", "title", "why", "steps"],
+              additionalProperties: false,
             },
           },
-          required: ["actions"],
-          additionalProperties: false,
         },
+        required: ["actions"],
+        additionalProperties: false,
       },
     },
     system: `You are a search and AI-visibility strategist. You get measured evidence of how visible a website really is: whether an AI model knows the brand, whether searching the brand name finds the site, and, for real customer questions, whether AI search cited the site and which sources it cited instead.
@@ -319,7 +369,7 @@ Write 4 to 8 actions that will actually increase the site's rankings and AI cita
 - priority 1 = do this week, biggest impact; 3 = later.
 - steps: 2 to 5 concrete, checkable steps each. why: one or two sentences citing the evidence.
 ${UNTRUSTED}`,
-    messages: [{ role: "user", content: JSON.stringify(evidence, null, 2) }],
+    user: JSON.stringify(evidence, null, 2),
   });
   const data = json<{ actions: VisibilityAction[] }>(response);
   return data.actions.sort((a, b) => a.priority - b.priority);
@@ -370,7 +420,7 @@ export async function measureVisibility(
   questionCount: number,
   onProgress: (message: string) => Promise<unknown>,
 ): Promise<VisibilityReport> {
-  if (!aiEnabled()) return emptyReport("skipped", "Set ANTHROPIC_API_KEY to measure real AI and search visibility.");
+  if (!aiEnabled()) return emptyReport("skipped", `${AI_KEY_HINT} to measure real AI and search visibility.`);
   if (questionCount <= 0) return emptyReport("skipped", "Your plan doesn't include visibility checks.");
   const domain = bareDomain(site.origin);
   try {
