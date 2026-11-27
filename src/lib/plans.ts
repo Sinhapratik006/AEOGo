@@ -33,10 +33,10 @@ export const PLANS: Record<PlanId, Plan> = {
     manualAuditsPerDay: 1,
     features: [
       "1 website, up to 10 pages per audit",
-      "Weekly automated AEO audits",
+      "Weekly automated AEO, SEO & GEO audits",
       "AI crawler access & robots.txt checks",
       "llms.txt and schema markup generator",
-      "AEO score tracking",
+      "AEO, SEO & GEO score tracking",
     ],
   },
   starter: {
@@ -51,11 +51,11 @@ export const PLANS: Record<PlanId, Plan> = {
     manualAuditsPerDay: 1,
     features: [
       "1 website, up to 100 pages per audit",
-      "Weekly automated AEO audits",
+      "Weekly automated AEO, SEO & GEO audits",
       "20 AI-written title & description fixes per audit",
       "AI crawler access & robots.txt checks",
       "llms.txt and schema markup generator",
-      "AEO score tracking",
+      "AEO, SEO & GEO score tracking",
     ],
   },
   growth: {

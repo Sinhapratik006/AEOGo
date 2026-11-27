@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ButtonLink, Logo } from "../ui";
 
 const NAV = [
+  { href: "/#aeo-seo-geo", label: "AEO · SEO · GEO" },
   { href: "/#how-it-works", label: "How it works" },
   { href: "/#features", label: "Features" },
   { href: "/pricing", label: "Pricing" },

@@ -15,7 +15,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <>
       <h1 className="text-2xl font-bold tracking-tight text-ink-900">Welcome back</h1>
-      <p className="mt-1 mb-6 text-sm text-ink-600">Sign in to see your AEO reports and fixes.</p>
+      <p className="mt-1 mb-6 text-sm text-ink-600">Sign in to see your AEO, SEO and GEO reports and fixes.</p>
       <Suspense fallback={<AuthFormFallback />}>
         <LoginGate searchParams={searchParams} />
       </Suspense>

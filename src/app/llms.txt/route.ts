@@ -10,9 +10,9 @@ export function GET() {
 
   const body = `# AEOGo
 
-> AEOGo is an automated Answer Engine Optimization (AEO) service. It audits websites for AI answer engines such as ChatGPT, Perplexity, Claude, Gemini and Google AI Overviews, writes the fixes with AI, and re-audits automatically.
+> AEOGo is an automated AEO (Answer Engine Optimization), SEO (Search Engine Optimization) and GEO (Generative Engine Optimization) service. It audits websites for Google and for AI engines such as ChatGPT, Perplexity, Claude, Gemini and Google AI Overviews, scores each of the three separately, writes the fixes with AI, and re-audits automatically.
 
-Customers subscribe to a plan per website and enter the website's URL. Once payment is confirmed, AEOGo crawls the site, checks AI crawler access in robots.txt, sitemaps, structured data (JSON-LD), titles and meta descriptions, answer-first content, author and date signals and JavaScript-dependent content, then generates AI-written metadata, an llms.txt file, a corrected robots.txt and schema markup. Fixes are suggestions; AEOGo never edits customer websites.
+Customers subscribe to a plan per website and enter the website's URL. Once payment is confirmed, AEOGo crawls the site and checks AEO signals (AI crawler access in robots.txt, llms.txt, structured data, answer-first content, JavaScript-dependent content), SEO signals (sitemaps, indexing, canonicals, titles and meta descriptions, headings, image alt text, internal links, HTTPS, speed and mobile) and GEO signals (statistics, cited sources, author and date signals, lists and tables, quotable paragraphs and brand entity markup). It then generates AI-written metadata, an llms.txt file, a corrected robots.txt and schema markup. Fixes are suggestions; AEOGo never edits customer websites.
 
 ## Plans
 

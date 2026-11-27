@@ -17,7 +17,7 @@ export function SiteFooter() {
         <div>
           <Logo />
           <p className="mt-3 max-w-xs text-sm text-ink-500">
-            Automated Answer Engine Optimization. Payments securely processed by Dodo Payments.
+            Automated AEO, SEO and GEO. Payments securely processed by Dodo Payments.
           </p>
         </div>
         <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-2">

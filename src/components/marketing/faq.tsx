@@ -5,6 +5,16 @@ export const FAQ_ITEMS: Array<{ question: string; answer: string }> = [
       "AEO is the practice of making your website easy for AI assistants such as ChatGPT, Perplexity, Claude, Gemini and Google AI Overviews to read, understand and cite. It covers crawler access, structured data, clear answer-first content and accurate metadata.",
   },
   {
+    question: "What's the difference between AEO, SEO and GEO?",
+    answer:
+      "SEO (Search Engine Optimization) gets your pages crawled, indexed and ranked by Google and Bing: sitemaps, canonicals, titles, descriptions, headings, speed, HTTPS and mobile. AEO (Answer Engine Optimization) makes sure AI assistants can reach your site and pull a direct answer from it. GEO (Generative Engine Optimization) makes your content trustworthy and quotable enough for ChatGPT, Perplexity, Gemini and AI Overviews to cite: statistics, sources, author and date signals, lists and a clearly defined brand. AEOGo scores all three separately in every audit.",
+  },
+  {
+    question: "Do I still need a separate SEO tool?",
+    answer:
+      "For most sites, no. Every AEOGo audit includes a full technical and on-page SEO report with its own score, plus AI-written titles and meta descriptions. If you need keyword rank tracking or backlink research, a dedicated tool still helps; AEOGo focuses on everything you can fix on your own site.",
+  },
+  {
     question: "What happens after I subscribe?",
     answer:
       "You enter your website address and check out. As soon as the payment is confirmed, our crawler starts auditing your site. Your first report, including AI-written fixes, is usually ready within 5 to 15 minutes depending on the size of your site. After that, audits run automatically on your plan's schedule.",

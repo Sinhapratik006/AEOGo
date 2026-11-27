@@ -9,7 +9,7 @@ import { AuthFormFallback } from "../auth-fallback";
 
 export const metadata: Metadata = {
   title: "Create your account",
-  description: "Create an AEOGo account and start optimizing your website for AI answer engines.",
+  description: "Create an AEOGo account and start optimizing your website for Google and AI search.",
 };
 
 export default function SignupPage({ searchParams }: PageProps<"/signup">) {

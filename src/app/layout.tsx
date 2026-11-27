@@ -21,18 +21,18 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl()),
   title: {
-    default: "AEOGo: Get your website cited by AI answer engines",
+    default: "AEOGo: AEO, SEO and GEO for Google and AI search",
     template: "%s · AEOGo",
   },
   description:
-    "AEOGo audits your website for ChatGPT, Perplexity, Claude and Google AI Overviews, writes the fixes with AI, and keeps monitoring your AEO score automatically.",
+    "AEOGo audits your website for Google, ChatGPT, Perplexity and Google AI Overviews, writes the fixes with AI, and keeps monitoring your AEO, SEO and GEO scores automatically.",
   applicationName: "AEOGo",
   openGraph: {
     type: "website",
     siteName: "AEOGo",
-    title: "AEOGo: Get your website cited by AI answer engines",
+    title: "AEOGo: AEO, SEO and GEO for Google and AI search",
     description:
-      "Automated Answer Engine Optimization: AI crawler access, structured data, llms.txt and AI-written fixes, monitored continuously.",
+      "Rank on Google and get cited by AI: automated AEO, SEO and GEO audits with AI-written fixes, monitored continuously.",
   },
   twitter: { card: "summary_large_image" },
 };
