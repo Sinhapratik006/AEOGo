@@ -9,8 +9,10 @@ import { PLANS, type Plan } from "../plans";
 import { AiAuthError, aiEnabled, draftMetadata } from "./ai-drafts";
 import type { IssueInput } from "./analyze";
 import { crawlSite, type CrawlResult } from "./crawl";
-import { INFORMATIONAL_CODES } from "./issues";
+import { AEO_CODES } from "./issues";
 import { overallScore, scorePage, scoreSite } from "./score";
+import { geoScore, seoScore, type SeoIssueRow } from "./seo";
+import { measureVisibility, type VisibilityReport } from "./visibility";
 import { buildLlmsTxt, buildOrganizationJsonLd, buildRobotsTxtSuggestion, guessSiteName } from "./site-fixes";
 
 const HEARTBEAT_INTERVAL_MS = 5_000;
@@ -18,6 +20,38 @@ const FAILURE_RETRY_HOURS = 6;
 const SITE_FIX_FIELDS: DraftField[] = ["robots_txt", "llms_txt", "jsonld"];
 
 type Beat = (pagesCrawled: number, message: string, force?: boolean) => Promise<boolean>;
+
+/** Asks AI search real customer questions to measure whether the site is actually found and cited. */
+async function runVisibility(website: Website, plan: Plan, crawl: CrawlResult, beat: Beat): Promise<VisibilityReport> {
+  const origin = crawl.origin;
+  const site = {
+    origin,
+    siteName: guessSiteName(crawl.homepage, origin),
+    homepageTitle: crawl.homepage?.title ?? "",
+    homepageDescription: crawl.homepage?.description ?? "",
+    homepageText: crawl.homepage?.textExcerpt ?? "",
+    pages: crawl.pages,
+  };
+  try {
+    return await measureVisibility(site, plan.visibilityQuestions, (message) => beat(crawl.pagesCrawled, message, true));
+  } catch (err) {
+    console.error(`[audit] visibility check for ${website.domain} failed`, err);
+    return {
+      status: "failed",
+      error: err instanceof AiAuthError ? "Anthropic rejected the API key. Check ANTHROPIC_API_KEY." : (err as Error).message,
+      checkedAt: new Date().toISOString(),
+      brand: "",
+      offering: "",
+      aiKnowsBrand: false,
+      aiBrandSummary: "",
+      brandSearchFindsSite: false,
+      brandSearchResults: [],
+      questions: [],
+      actions: [],
+      score: 0,
+    };
+  }
+}
 
 function clip(value: string | null | undefined, max: number): string | null {
   if (value === null || value === undefined) return null;
@@ -52,11 +86,18 @@ async function failAudit(auditId: string, websiteId: string, message: string, ex
 /** Runs one claimed audit end to end. Never throws. */
 export async function runAudit(auditId: string): Promise<void> {
   const db = getDb();
-  const [row] = await db
-    .select({ website: websites })
-    .from(audits)
-    .innerJoin(websites, eq(websites.id, audits.websiteId))
-    .where(eq(audits.id, auditId));
+  let row: { website: Website } | undefined;
+  try {
+    [row] = await db
+      .select({ website: websites })
+      .from(audits)
+      .innerJoin(websites, eq(websites.id, audits.websiteId))
+      .where(eq(audits.id, auditId));
+  } catch (err) {
+    // Leave it "running"; the worker's stale-audit recovery requeues it.
+    console.error(`[audit ${auditId}] could not load audit`, err);
+    return;
+  }
   if (!row) return;
   try {
     await executeAudit(auditId, row.website);
@@ -94,6 +135,9 @@ async function executeAudit(auditId: string, website: Website): Promise<void> {
 
   const counts: Record<Severity, number> = { high: 0, medium: 0, low: 0 };
   const pageScores: number[] = [];
+  // Kept to compute the SEO and GEO scores once the crawl is done.
+  const pageUrls: string[] = [];
+  const allIssues: SeoIssueRow[] = [];
   let lastBeat = 0;
   let stopped = false;
 
@@ -121,9 +165,13 @@ async function executeAudit(auditId: string, website: Website): Promise<void> {
     {
       onProgress: (pagesCrawled, message) => beat(pagesCrawled, message),
       onPage: async ({ record, issues: pageIssues }) => {
-        const score = scorePage(pageIssues.filter((i) => !INFORMATIONAL_CODES.has(i.code)));
+        // Every finding is stored; only AEO checks count toward the AEO score and counts (SEO/GEO have their own).
+        const aeoIssues = pageIssues.filter((i) => AEO_CODES.has(i.code));
+        const score = scorePage(aeoIssues);
         pageScores.push(score);
-        for (const issue of pageIssues) counts[issue.severity]++;
+        pageUrls.push(record.url);
+        for (const i of pageIssues) allIssues.push({ url: i.url, code: i.code, severity: i.severity });
+        for (const issue of aeoIssues) counts[issue.severity]++;
         await db.transaction(async (tx) => {
           await tx.insert(pages).values({
             auditId,
@@ -134,7 +182,7 @@ async function executeAudit(auditId: string, website: Website): Promise<void> {
             h1Count: record.h1Count,
             words: record.words,
             schemaTypes: clip(record.schemaTypes.join(","), 1000),
-            issueCount: pageIssues.length,
+            issueCount: aeoIssues.length,
             score,
             textExcerpt: record.textExcerpt,
           });
@@ -153,7 +201,7 @@ async function executeAudit(auditId: string, website: Website): Promise<void> {
   }
 
   if (crawl.siteIssues.length) await db.insert(issues).values(crawl.siteIssues.map((i) => toIssueRow(auditId, i)));
-  const scoredSiteIssues = crawl.siteIssues.filter((i) => !INFORMATIONAL_CODES.has(i.code));
+  const scoredSiteIssues = crawl.siteIssues.filter((i) => AEO_CODES.has(i.code));
   for (const issue of scoredSiteIssues) counts[issue.severity]++;
 
   if (!crawl.ok) {
@@ -167,6 +215,10 @@ async function executeAudit(auditId: string, website: Website): Promise<void> {
   }
 
   const score = overallScore(pageScores, scoreSite(scoredSiteIssues));
+  for (const i of crawl.siteIssues) allIssues.push({ url: i.url, code: i.code, severity: i.severity });
+  const seo = seoScore(pageUrls, allIssues);
+  const geo = geoScore(pageUrls, allIssues);
+  const visibility = await runVisibility(website, plan, crawl, beat);
   await beat(crawl.pagesCrawled, "Writing your fixes", true);
   const draftsCreated = (await writeSiteFixes(auditId, website, crawl)) + (await writeMetaDrafts(auditId, website, plan, crawl, beat));
 
@@ -185,6 +237,10 @@ async function executeAudit(auditId: string, website: Website): Promise<void> {
         issuesLow: counts.low,
         draftsCreated,
         score,
+        seoScore: seo,
+        geoScore: geo,
+        visibility,
+        visibilityScore: visibility.status === "completed" ? visibility.score : null,
       })
       .where(and(eq(audits.id, auditId), eq(audits.status, "running")))
       .returning({ id: audits.id });

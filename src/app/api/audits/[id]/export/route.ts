@@ -1,7 +1,7 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { audits, issues, websites } from "@/db/schema";
-import { issueInfo } from "@/lib/aeo/issues";
+import { issueCategory, issueInfo } from "@/lib/aeo/issues";
 import { isUuid } from "@/lib/constants";
 import { HttpError, requireApiUser, withApi } from "@/lib/server/api";
 
@@ -32,10 +32,11 @@ export const GET = withApi(async (_req: Request, ctx: RouteContext<"/api/audits/
     .where(eq(issues.auditId, id))
     .orderBy(sql`case ${issues.severity} when 'high' then 0 when 'medium' then 1 else 2 end`, asc(issues.code), asc(issues.url));
 
-  const lines = [["Severity", "Issue code", "Issue", "URL", "Detail", "How to fix"].map(cell).join(",")];
+  const lines = [["Severity", "Category", "Issue code", "Issue", "URL", "Detail", "How to fix"].map(cell).join(",")];
   for (const row of rows) {
     const info = issueInfo(row.code);
-    lines.push([row.severity, row.code, info.title, row.url, row.detail, info.fix].map(cell).join(","));
+    const category = issueCategory(row.code);
+    lines.push([row.severity, category, row.code, info.title, row.url, row.detail, info.fix].map(cell).join(","));
   }
   const date = audit.queuedAt.toISOString().slice(0, 10);
   const filename = `aeo-issues-${audit.domain.replace(/[^a-z0-9.-]/gi, "")}-${date}.csv`;

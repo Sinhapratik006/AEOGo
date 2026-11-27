@@ -13,21 +13,24 @@ import {
   RemoveWebsiteButton,
   RunAuditButton,
 } from "@/components/dashboard/website-actions";
-import { Card, cn, Notice, ScoreRing, scoreColor, Skeleton, StatusBadge } from "@/components/ui";
+import { Card, cn, Notice, Skeleton, StatusBadge } from "@/components/ui";
 import { getDb } from "@/db";
 import { audits, websites, type Audit, type Website } from "@/db/schema";
 import { CHECKOUT_ALLOWED_STATUSES, isAutomationStatus, isUuid } from "@/lib/constants";
 import { formatDateTime, relativeTime } from "@/lib/format";
 import { auditIntervalLabel, PLANS } from "@/lib/plans";
 import { requireUser } from "@/lib/server/auth";
-import { FixesTab, HistoryTab, IssuesTab, PagesTab, StatusBanner } from "./sections";
+import { ChecksTab, FixesTab, HistoryTab, PagesTab, ScoreCards, StatusBanner, VisibilityTab } from "./sections";
 import { AuditProgress } from "@/components/dashboard/audit-progress";
 
 export const metadata: Metadata = { title: "Website" };
 
 const TABS = [
-  { id: "fixes", label: "Fixes" },
-  { id: "issues", label: "Issues" },
+  { id: "visibility", label: "Real visibility" },
+  { id: "aeo", label: "AEO" },
+  { id: "seo", label: "SEO" },
+  { id: "geo", label: "GEO" },
+  { id: "fixes", label: "All fixes" },
   { id: "pages", label: "Pages" },
   { id: "history", label: "History" },
 ] as const;
@@ -45,7 +48,7 @@ function WebsiteSkeleton() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-10 w-72" />
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
           <Skeleton key={i} className="h-28" />
         ))}
@@ -114,12 +117,10 @@ async function WebsiteView({ params, searchParams }: Pick<PageProps<"/dashboard/
   const latestFinished = auditList.find((a) => a.status === "completed" || a.status === "failed");
   const lastFailed = latestFinished?.status === "failed" ? latestFinished : undefined;
 
-  const tab: TabId = TABS.some((t) => t.id === query.tab) ? (query.tab as TabId) : "fixes";
+  // "issues" was the AEO tab's old name; keep old links (e.g. in emails) working.
+  const requestedTab = query.tab === "issues" ? "aeo" : query.tab;
+  const tab: TabId = TABS.some((t) => t.id === requestedTab) ? (requestedTab as TabId) : "visibility";
   const plan = PLANS[site.plan];
-  const delta =
-    latestCompleted?.score !== null && latestCompleted?.score !== undefined && previousCompleted?.score !== null && previousCompleted?.score !== undefined
-      ? latestCompleted.score - previousCompleted.score
-      : null;
 
   return (
     <div className="space-y-6">
@@ -169,23 +170,10 @@ async function WebsiteView({ params, searchParams }: Pick<PageProps<"/dashboard/
 
       {latestCompleted ? (
         <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="flex items-center gap-4 p-5">
-              <ScoreRing score={latestCompleted.score} size={72} />
-              <div>
-                <p className="text-sm text-ink-500">AEO score</p>
-                {delta !== null ? (
-                  <p className="text-sm font-semibold" style={{ color: delta >= 0 ? scoreColor(100) : scoreColor(0) }}>
-                    {delta >= 0 ? `+${delta}` : delta} since last audit
-                  </p>
-                ) : (
-                  <p className="text-sm text-ink-500">First audit</p>
-                )}
-              </div>
-            </Card>
-            <StatCard label="Issues found" sub={`${latestCompleted.issuesHigh} high · ${latestCompleted.issuesMedium} medium · ${latestCompleted.issuesLow} low`}>
-              {latestCompleted.issuesHigh + latestCompleted.issuesMedium + latestCompleted.issuesLow}
-            </StatCard>
+          <Suspense fallback={<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-28" />)}</div>}>
+            <ScoreCards audit={latestCompleted} previous={previousCompleted} websiteId={site.id} />
+          </Suspense>
+          <div className="grid gap-4 md:grid-cols-2">
             <StatCard label="Pages crawled" sub={`Last audit ${relativeTime(latestCompleted.finishedAt)}`}>
               {latestCompleted.pagesCrawled}
             </StatCard>
@@ -223,8 +211,11 @@ async function WebsiteView({ params, searchParams }: Pick<PageProps<"/dashboard/
           </nav>
 
           <Suspense key={tab} fallback={<Skeleton className="h-96" />}>
+            {(tab === "aeo" || tab === "seo" || tab === "geo") && (
+              <ChecksTab kind={tab} audit={latestCompleted} websiteId={site.id} />
+            )}
+            {tab === "visibility" && <VisibilityTab audit={latestCompleted} />}
             {tab === "fixes" && <FixesTab websiteId={site.id} hasCompletedAudit />}
-            {tab === "issues" && <IssuesTab auditId={latestCompleted.id} />}
             {tab === "pages" && <PagesTab auditId={latestCompleted.id} />}
             {tab === "history" && <HistoryTab audits={auditList} />}
           </Suspense>

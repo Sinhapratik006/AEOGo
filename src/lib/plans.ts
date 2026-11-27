@@ -12,6 +12,8 @@ export interface Plan {
   auditIntervalHours: number;
   /** Maximum AI-written metadata fixes per audit. */
   aiDraftsPerAudit: number;
+  /** Customer questions asked to AI search per audit to measure real visibility. */
+  visibilityQuestions: number;
   /** Manual "run audit now" requests allowed per 24 hours. */
   manualAuditsPerDay: number;
   highlighted?: boolean;
@@ -27,6 +29,7 @@ export const PLANS: Record<PlanId, Plan> = {
     maxPages: 10,
     auditIntervalHours: 24 * 7,
     aiDraftsPerAudit: 0,
+    visibilityQuestions: 3,
     manualAuditsPerDay: 1,
     features: [
       "1 website, up to 10 pages per audit",
@@ -44,6 +47,7 @@ export const PLANS: Record<PlanId, Plan> = {
     maxPages: 100,
     auditIntervalHours: 24 * 7,
     aiDraftsPerAudit: 20,
+    visibilityQuestions: 5,
     manualAuditsPerDay: 1,
     features: [
       "1 website, up to 100 pages per audit",
@@ -62,6 +66,7 @@ export const PLANS: Record<PlanId, Plan> = {
     maxPages: 500,
     auditIntervalHours: 72,
     aiDraftsPerAudit: 60,
+    visibilityQuestions: 8,
     manualAuditsPerDay: 3,
     highlighted: true,
     features: [
@@ -81,6 +86,7 @@ export const PLANS: Record<PlanId, Plan> = {
     maxPages: 2000,
     auditIntervalHours: 24,
     aiDraftsPerAudit: 150,
+    visibilityQuestions: 12,
     manualAuditsPerDay: 10,
     features: [
       "1 website, up to 2,000 pages per audit",

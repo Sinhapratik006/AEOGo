@@ -40,7 +40,11 @@ export function getPool(): Pool {
     const pool = new Pool({
       connectionString,
       max: Number(process.env.DATABASE_POOL_MAX ?? 10),
-      idleTimeoutMillis: 30_000,
+      // Hosted poolers (e.g. Neon) drop idle connections server-side; keep ours short-lived
+      // and send TCP keepalives so we don't hand out a socket that's already been closed.
+      idleTimeoutMillis: 10_000,
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10_000,
       connectionTimeoutMillis: 30_000,
       // Explicitly set sslmode to suppress the deprecation warning and
       // adopt strong security semantics until pg v9.0.0 / pg-connection-string v3.0.0
@@ -49,9 +53,43 @@ export function getPool(): Pool {
     pool.on("error", (err) => {
       console.error("[db] idle client error", err);
     });
+    retryReadsOnConnectionReset(pool);
     globalForDb.__aeogoPool = pool;
   }
   return globalForDb.__aeogoPool;
+}
+
+const TRANSIENT_CODES = new Set(["ECONNRESET", "EPIPE", "ETIMEDOUT", "57P01"]);
+
+function isTransientConnectionError(err: unknown): boolean {
+  const e = err as { code?: string; message?: string } | null;
+  if (!e) return false;
+  if (e.code && TRANSIENT_CODES.has(e.code)) return true;
+  return /Connection terminated|connection.*closed/i.test(e.message ?? "");
+}
+
+function isReadOnlyQuery(arg: unknown): boolean {
+  const text = typeof arg === "string" ? arg : (arg as { text?: string } | null)?.text;
+  return typeof text === "string" && /^\s*(select|with\s(?![\s\S]*\b(insert|update|delete)\b))/i.test(text);
+}
+
+/**
+ * Retries a read query once on a fresh connection when the pooled socket turns out to
+ * have been closed by the server. Writes are never retried (they may have already applied).
+ */
+function retryReadsOnConnectionReset(pool: Pool) {
+  const original = pool.query.bind(pool) as (...args: unknown[]) => unknown;
+  (pool as unknown as { query: (...args: unknown[]) => unknown }).query = (...args: unknown[]) => {
+    // Callback-style calls pass straight through.
+    if (typeof args[args.length - 1] === "function") return original(...args);
+    return (original(...args) as Promise<unknown>).catch((err: unknown) => {
+      if (isTransientConnectionError(err) && isReadOnlyQuery(args[0])) {
+        console.warn("[db] connection reset, retrying read query once");
+        return original(...args);
+      }
+      throw err;
+    });
+  };
 }
 
 export function getDb(): Database {

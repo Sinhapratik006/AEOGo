@@ -12,6 +12,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 // Relative imports only: drizzle-kit loads this file without tsconfig path aliases.
+import type { VisibilityReport } from "../lib/aeo/visibility";
 import type {
   AuditStatus,
   AuditTrigger,
@@ -130,6 +131,21 @@ export const websites = pgTable(
   ],
 );
 
+/** Contact people (name + email) for a website. A website can have several. */
+export const websiteContacts = pgTable(
+  "website_contacts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    websiteId: uuid("website_id")
+      .notNull()
+      .references(() => websites.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    createdAt: tstz("created_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("website_contacts_website_email_key").on(t.websiteId, sql`lower(${t.email})`)],
+);
+
 /** Every Dodo checkout session we create, so payments can always be traced to a website. */
 export const checkoutSessions = pgTable(
   "checkout_sessions",
@@ -192,6 +208,13 @@ export const audits = pgTable(
     issuesLow: integer("issues_low").notNull().default(0),
     draftsCreated: integer("drafts_created").notNull().default(0),
     score: integer("score"),
+    /** Classic search engine score (SEO tab). Null for audits from before it existed. */
+    seoScore: integer("seo_score"),
+    /** Generative engine score (GEO tab). Null for audits from before it existed. */
+    geoScore: integer("geo_score"),
+    /** Real AI/search visibility, measured by asking AI search customer questions. */
+    visibilityScore: integer("visibility_score"),
+    visibility: jsonb("visibility").$type<VisibilityReport>(),
     error: text("error"),
     queuedAt: tstz("queued_at").notNull().defaultNow(),
     startedAt: tstz("started_at"),
@@ -315,6 +338,7 @@ export const rateLimits = pgTable("rate_limits", {
 export type User = typeof users.$inferSelect;
 export type AuditRecipient = typeof auditRecipients.$inferSelect;
 export type Website = typeof websites.$inferSelect;
+export type WebsiteContact = typeof websiteContacts.$inferSelect;
 export type Audit = typeof audits.$inferSelect;
 export type Page = typeof pages.$inferSelect;
 export type Issue = typeof issues.$inferSelect;

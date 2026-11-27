@@ -19,7 +19,11 @@ export interface PageRecord {
   textExcerpt: string;
   ogSiteName: string | null;
   noindex: boolean;
+  /** Organization/Person/LocalBusiness JSON-LD on the page: absent, present without sameAs, or complete. */
+  entity: EntityMarkup;
 }
+
+export type EntityMarkup = "none" | "no-sameas" | "ok";
 
 export interface PageAnalysis {
   record: PageRecord;
@@ -59,10 +63,14 @@ function metaContent($: CheerioRoot, attr: "name" | "property", value: string): 
   return normalizeSpace(el.attr("content") ?? "");
 }
 
-function parseJsonLd($: CheerioRoot): { types: string[]; problems: string[]; hasAuthorOrDate: boolean } {
+/** Schema.org types that identify the brand or person behind a site. */
+const ENTITY_TYPE = /Organization|Corporation|LocalBusiness|Person|Store|Restaurant|Brand/;
+
+function parseJsonLd($: CheerioRoot): { types: string[]; problems: string[]; hasAuthorOrDate: boolean; entity: EntityMarkup } {
   const types = new Set<string>();
   const problems = new Set<string>();
   let hasAuthorOrDate = false;
+  let entity: EntityMarkup = "none";
   const isObject = (v: unknown): v is Record<string, unknown> =>
     typeof v === "object" && v !== null && !Array.isArray(v);
 
@@ -87,15 +95,25 @@ function parseJsonLd($: CheerioRoot): { types: string[]; problems: string[]; has
       for (const item of items) {
         if (!isObject(item)) continue;
         const rawType = item["@type"];
+        let isEntity = false;
         for (const t of Array.isArray(rawType) ? rawType : [rawType]) {
-          if (typeof t === "string" && t.trim()) types.add(t.trim());
+          if (typeof t === "string" && t.trim()) {
+            types.add(t.trim());
+            if (ENTITY_TYPE.test(t)) isEntity = true;
+          }
+        }
+        if (isEntity) {
+          const sameAs = item.sameAs;
+          const hasSameAs = Array.isArray(sameAs) ? sameAs.length > 0 : typeof sameAs === "string" && sameAs.trim() !== "";
+          if (hasSameAs) entity = "ok";
+          else if (entity === "none") entity = "no-sameas";
         }
         if (!topLevelContext && !("@context" in item)) problems.add("JSON-LD missing @context");
         if ("author" in item || "datePublished" in item || "dateModified" in item) hasAuthorOrDate = true;
       }
     });
 
-  return { types: [...types].sort(), problems: [...problems], hasAuthorOrDate };
+  return { types: [...types].sort(), problems: [...problems], hasAuthorOrDate, entity };
 }
 
 function extractLinks($: CheerioRoot, pageUrl: string): string[] {
@@ -121,7 +139,136 @@ function extractLinks($: CheerioRoot, pageUrl: string): string[] {
   return [...links];
 }
 
-/** Runs the deterministic AEO checks for one HTML page. */
+const LARGE_HTML_BYTES = 1_000_000;
+const MAX_FRIENDLY_URL_LENGTH = 100;
+
+function bareHost(hostname: string): string {
+  return hostname.toLowerCase().replace(/^www\./, "");
+}
+
+/** Classic SEO checks that don't depend on AEO signals. Must run before the DOM is modified. */
+function seoChecks(
+  $: CheerioRoot,
+  url: string,
+  html: string,
+  links: string[],
+  add: (code: string, severity: Severity, detail?: string) => void,
+): void {
+  const page = new URL(url);
+
+  if (!($("html").first().attr("lang") ?? "").trim()) add("SEO_LANG_MISSING", "low");
+
+  const hasViewport = $("meta").filter((_, e) => ($(e).attr("name") ?? "").trim().toLowerCase() === "viewport").length > 0;
+  if (!hasViewport) add("SEO_VIEWPORT_MISSING", "high");
+
+  const missingSocial = ["og:title", "og:description", "og:image"].filter((p) => !metaContent($, "property", p));
+  if (!metaContent($, "name", "twitter:card")) missingSocial.push("twitter:card");
+  if (missingSocial.length) add("SEO_OPEN_GRAPH_MISSING", "low", `missing ${missingSocial.join(", ")}`);
+
+  const canonicalHref = $("link[href]")
+    .filter((_, e) => ($(e).attr("rel") ?? "").toLowerCase().split(/\s+/).includes("canonical"))
+    .first()
+    .attr("href");
+  if (canonicalHref) {
+    try {
+      const canonical = new URL(canonicalHref.trim(), url);
+      if (bareHost(canonical.hostname) !== bareHost(page.hostname)) {
+        add("SEO_CANONICAL_OFFSITE", "medium", `points to ${canonical.origin}`);
+      }
+    } catch {
+      add("SEO_CANONICAL_OFFSITE", "medium", "canonical URL is not valid");
+    }
+  }
+
+  if (page.protocol === "https:") {
+    const insecure = $("img[src], script[src], iframe[src], link[rel~='stylesheet'][href], source[src], video[src], audio[src]").filter(
+      (_, e) => /^http:\/\//i.test(($(e).attr("src") ?? $(e).attr("href") ?? "").trim()),
+    ).length;
+    if (insecure) add("SEO_MIXED_CONTENT", "medium", `${insecure} insecure resources`);
+  }
+
+  const urlProblems: string[] = [];
+  if (url.length > MAX_FRIENDLY_URL_LENGTH) urlProblems.push(`${url.length} characters`);
+  if (/[A-Z]/.test(page.pathname)) urlProblems.push("uppercase letters");
+  if (page.pathname.includes("_")) urlProblems.push("underscores");
+  if (/%20|\+/.test(page.pathname)) urlProblems.push("spaces");
+  if (urlProblems.length) add("SEO_URL_UNFRIENDLY", "low", urlProblems.join(", "));
+
+  const self = url.replace(/\/$/, "");
+  const internalLinks = links.filter((link) => {
+    try {
+      return bareHost(new URL(link).hostname) === bareHost(page.hostname) && link.replace(/\/$/, "") !== self;
+    } catch {
+      return false;
+    }
+  });
+  if (internalLinks.length === 0) add("SEO_NO_INTERNAL_LINKS", "low");
+
+  const imagesWithoutSize = $("img").filter((_, e) => {
+    const img = $(e);
+    if (img.attr("width") && img.attr("height")) return false;
+    // Sized by inline CSS (e.g. Next.js <Image fill>) doesn't shift the layout either.
+    const style = (img.attr("style") ?? "").toLowerCase();
+    return !(/(^|;)\s*width\s*:/.test(style) && /(^|;)\s*height\s*:/.test(style));
+  }).length;
+  if (imagesWithoutSize) add("SEO_IMG_DIMENSIONS_MISSING", "low", `${imagesWithoutSize} images`);
+
+  const bytes = Buffer.byteLength(html, "utf8");
+  if (bytes > LARGE_HTML_BYTES) add("SEO_LARGE_PAGE", "low", `${Math.round(bytes / 1024)} KB of HTML`);
+}
+
+/** GEO content checks only apply to pages with enough text to be a source (not contact or login pages). */
+const GEO_MIN_WORDS = 300;
+const GEO_LONG_PARAGRAPH_WORDS = 150;
+const STATISTIC =
+  /\d+(?:[.,]\d+)?\s?(?:%|percent\b|per cent\b)|[$€£¥₹]\s?\d|\b\d{1,3}(?:,\d{3})+\b|\b\d+(?:\.\d+)?\s?(?:million|billion|trillion|thousand|bn|km|kg|lbs?|mph|hours|minutes|days|weeks|months|years|times)\b/i;
+const QUESTION_HEADING = /\?\s*$|^(how|what|why|when|where|which|who|can|should|is|are|do|does)\b/i;
+const QA_SCHEMA = /^(FAQPage|QAPage|HowTo)$/;
+
+/**
+ * Generative Engine Optimization checks: is this page the kind of source an AI assistant
+ * would quote? Runs on the main content after navigation and footers are removed.
+ */
+function geoChecks(
+  $: CheerioRoot,
+  main: ReturnType<CheerioRoot>,
+  url: string,
+  text: string,
+  words: number,
+  schemaTypes: string[],
+  add: (code: string, severity: Severity, detail?: string) => void,
+): void {
+  if (words < GEO_MIN_WORDS) return;
+  const pageHost = bareHost(new URL(url).hostname);
+
+  if (!STATISTIC.test(text)) add("GEO_NO_STATISTICS", "low", `${words} words without a statistic`);
+
+  const externalLinks = main.find("a[href]").filter((_, e) => {
+    try {
+      const link = new URL(($(e).attr("href") ?? "").trim(), url);
+      return /^https?:$/.test(link.protocol) && bareHost(link.hostname) !== pageHost;
+    } catch {
+      return false;
+    }
+  }).length;
+  if (externalLinks === 0 && main.find("blockquote, q, cite").length === 0) {
+    add("GEO_NO_SOURCES", "low", "no outbound source links or quotes");
+  }
+
+  const questionHeadings = main.find("h2, h3").filter((_, e) => QUESTION_HEADING.test(normalizeSpace($(e).text()))).length;
+  if (questionHeadings === 0 && !schemaTypes.some((t) => QA_SCHEMA.test(t))) add("GEO_NO_QUESTION_HEADINGS", "low");
+
+  if (main.find("ul, ol, table, dl").length === 0) add("GEO_NO_LISTS_OR_TABLES", "low");
+
+  const longParagraphs = main
+    .find("p")
+    .filter((_, e) => countWords(normalizeSpace($(e).text())) > GEO_LONG_PARAGRAPH_WORDS).length;
+  if (longParagraphs) {
+    add("GEO_LONG_PARAGRAPHS", "low", `${longParagraphs} paragraph${longParagraphs === 1 ? "" : "s"} over ${GEO_LONG_PARAGRAPH_WORDS} words`);
+  }
+}
+
+/** Runs the deterministic AEO, SEO and GEO checks for one HTML page. */
 export function analyzePage(input: {
   url: string;
   status: number;
@@ -138,6 +285,7 @@ export function analyzePage(input: {
   const links = extractLinks($, url);
   const scriptCount = $("script").length;
   const looksLikeJsApp = $(JS_APP_ROOTS).length > 0;
+  seoChecks($, url, html, links, add);
 
   const headTitle = $("head > title").first();
   const title = normalizeSpace((headTitle.length ? headTitle : $("title").first()).text());
@@ -191,6 +339,7 @@ export function analyzePage(input: {
   const text = normalizeSpace(chunks.join(" "));
   const words = countWords(text);
   if (words < 150) add("THIN_CONTENT", "medium", `${words} words`);
+  geoChecks($, main, url, text, words, jsonLd.types, add);
 
   // Answer-first: the first paragraph after the H1 should be a concise, direct answer.
   if (h1Count > 0) {
@@ -234,6 +383,7 @@ export function analyzePage(input: {
       textExcerpt: text.slice(0, 4000),
       ogSiteName: metaContent($, "property", "og:site_name") || null,
       noindex,
+      entity: jsonLd.entity,
     },
     issues,
     links,

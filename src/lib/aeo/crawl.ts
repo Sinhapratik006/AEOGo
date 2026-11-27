@@ -5,6 +5,10 @@ import { analyzePage, type IssueInput, type PageRecord } from "./analyze";
 const SKIP_EXTENSIONS =
   /\.(?:jpe?g|png|gif|webp|avif|svg|ico|bmp|tiff?|heic|pdf|zip|gz|tgz|rar|7z|tar|bz2|mp4|m4v|mov|avi|wmv|webm|mkv|mp3|wav|ogg|flac|m4a|css|js|mjs|map|json|xml|rss|atom|txt|csv|tsv|xlsx?|docx?|pptx?|odt|rtf|woff2?|ttf|otf|eot|exe|msi|dmg|pkg|apk|iso|bin)$/i;
 const MAX_CONSECUTIVE_FAILURES = 25;
+const SLOW_RESPONSE_MS = 1_500;
+const VERY_SLOW_RESPONSE_MS = 3_000;
+/** At most this many affected URLs are recorded per duplicate title/description. */
+const MAX_DUPLICATE_URLS = 20;
 
 export interface CrawledPage {
   record: PageRecord;
@@ -79,6 +83,7 @@ function emptyRecord(url: string, statusCode: number): PageRecord {
     textExcerpt: "",
     ogSiteName: null,
     noindex: false,
+    entity: "none",
   };
 }
 
@@ -107,8 +112,11 @@ export async function crawlSite(siteUrl: string, options: CrawlOptions, callback
 
   await callbacks.onProgress(0, "Loading your homepage");
   let homepageRes: SafeResponse;
+  let homepageMs = 0;
   try {
+    const fetchStart = Date.now();
     homepageRes = await safeFetch(homepageUrl);
+    homepageMs = Date.now() - fetchStart;
   } catch (err) {
     const message = (err as Error).message;
     siteIssues.push({ url: homepageUrl, code: "FETCH_FAILED", severity: "high", detail: message });
@@ -134,6 +142,9 @@ export async function crawlSite(siteUrl: string, options: CrawlOptions, callback
   const origin = allowedHosts.has(finalHost) ? new URL(homepageRes.url).origin : result.origin;
   result.origin = origin;
 
+  await callbacks.onProgress(0, "Checking HTTPS");
+  siteIssues.push(...(await checkHttps(origin, allowedHosts)));
+
   await callbacks.onProgress(0, "Checking robots.txt and AI crawler access");
   const robots = await checkRobots(origin);
   result.robots = robots;
@@ -153,6 +164,14 @@ export async function crawlSite(siteUrl: string, options: CrawlOptions, callback
   const queue: string[] = [];
   const queued = new Set<string>();
   const seen = new Set<string>();
+  const titles = new Map<string, string[]>();
+  const descriptions = new Map<string, string[]>();
+  const remember = (map: Map<string, string[]>, key: string, url: string) => {
+    if (!key) return;
+    const urls = map.get(key.toLowerCase()) ?? [];
+    if (urls.length < MAX_DUPLICATE_URLS) urls.push(url);
+    map.set(key.toLowerCase(), urls);
+  };
 
   const enqueue = (raw: string) => {
     const normalized = normalizeUrl(raw);
@@ -167,7 +186,7 @@ export async function crawlSite(siteUrl: string, options: CrawlOptions, callback
     queue.push(normalized);
   };
 
-  const processResponse = async (requestedUrl: string, res: SafeResponse) => {
+  const processResponse = async (requestedUrl: string, res: SafeResponse, elapsedMs: number) => {
     const finalUrl = normalizeUrl(res.url) ?? requestedUrl;
     if (finalUrl !== requestedUrl) {
       if (seen.has(finalUrl)) return; // Redirected to a page we already processed.
@@ -188,6 +207,27 @@ export async function crawlSite(siteUrl: string, options: CrawlOptions, callback
     result.pagesCrawled++;
     const analysis = analyzePage({ url: finalUrl, status: res.status, html: res.text(), headers: res.headers });
 
+    if (elapsedMs >= SLOW_RESPONSE_MS) {
+      analysis.issues.push({
+        url: finalUrl,
+        code: "SEO_SLOW_RESPONSE",
+        severity: elapsedMs >= VERY_SLOW_RESPONSE_MS ? "medium" : "low",
+        detail: `${(elapsedMs / 1000).toFixed(1)} s to load`,
+      });
+    }
+    if (res.redirects.length >= 2) {
+      analysis.issues.push({
+        url: finalUrl,
+        code: "SEO_REDIRECT_CHAIN",
+        severity: "low",
+        detail: `${res.redirects.length} redirects from ${res.redirects[0]}`,
+      });
+    }
+    if (!analysis.record.noindex) {
+      remember(titles, analysis.record.title, finalUrl);
+      remember(descriptions, analysis.record.description, finalUrl);
+    }
+
     // Page-level AI access, only meaningful when the site as a whole is open to these bots.
     if (robots.robot && robots.blockedAnswerBots.length === 0) {
       const robot = robots.robot;
@@ -206,7 +246,7 @@ export async function crawlSite(siteUrl: string, options: CrawlOptions, callback
   };
 
   seen.add(normalizeUrl(homepageUrl) ?? homepageUrl);
-  await processResponse(homepageUrl, homepageRes);
+  await processResponse(homepageUrl, homepageRes, homepageMs);
   if (!result.homepage) {
     result.fatalError =
       homepageRes.status >= 400
@@ -215,6 +255,13 @@ export async function crawlSite(siteUrl: string, options: CrawlOptions, callback
     return result;
   }
   for (const url of sitemap.urls) enqueue(url);
+
+  // GEO: the homepage should tell AI models who the brand is.
+  if (result.homepage.entity === "none") {
+    siteIssues.push({ url: result.homepage.url, code: "GEO_ENTITY_MISSING", severity: "medium", detail: "no Organization or Person JSON-LD" });
+  } else if (result.homepage.entity === "no-sameas") {
+    siteIssues.push({ url: result.homepage.url, code: "GEO_ENTITY_SAMEAS_MISSING", severity: "low", detail: null });
+  }
 
   let consecutiveFailures = 0;
   while (queue.length > 0 && result.pagesCrawled < options.maxPages) {
@@ -233,8 +280,11 @@ export async function crawlSite(siteUrl: string, options: CrawlOptions, callback
 
     await sleep(delayMs);
     let res: SafeResponse;
+    let elapsedMs = 0;
     try {
+      const fetchStart = Date.now();
       res = await safeFetch(url);
+      elapsedMs = Date.now() - fetchStart;
       consecutiveFailures = 0;
     } catch (err) {
       consecutiveFailures++;
@@ -255,13 +305,47 @@ export async function crawlSite(siteUrl: string, options: CrawlOptions, callback
       continue;
     }
 
-    await processResponse(url, res);
+    await processResponse(url, res, elapsedMs);
     if (!(await callbacks.onProgress(result.pagesCrawled, `Crawled ${result.pagesCrawled} pages`))) {
       result.aborted = true;
       break;
     }
   }
 
+  siteIssues.push(
+    ...duplicateIssues(titles, "SEO_DUPLICATE_TITLE", "medium"),
+    ...duplicateIssues(descriptions, "SEO_DUPLICATE_DESCRIPTION", "low"),
+  );
   result.ok = true;
   return result;
+}
+
+function duplicateIssues(map: Map<string, string[]>, code: string, severity: IssueInput["severity"]): IssueInput[] {
+  const out: IssueInput[] = [];
+  for (const urls of map.values()) {
+    if (urls.length < 2) continue;
+    for (const url of urls) {
+      out.push({ url, code, severity, detail: `shared with ${urls.length - 1} other page${urls.length > 2 ? "s" : ""}` });
+    }
+  }
+  return out;
+}
+
+/** Checks the site is served over HTTPS and that its http:// version redirects there. */
+async function checkHttps(origin: string, allowedHosts: Set<string>): Promise<IssueInput[]> {
+  const url = new URL(origin);
+  if (url.protocol === "http:") {
+    return [{ url: `${origin}/`, code: "SEO_NOT_HTTPS", severity: "high", detail: null }];
+  }
+  const httpUrl = `http://${url.host}/`;
+  try {
+    const res = await safeFetch(httpUrl, { timeoutMs: 10_000, maxBytes: 64 * 1024 });
+    const final = new URL(res.url);
+    if (res.status < 400 && (final.protocol !== "https:" || !allowedHosts.has(final.hostname))) {
+      return [{ url: httpUrl, code: "SEO_HTTP_NOT_REDIRECTED", severity: "medium", detail: `served at ${res.url}` }];
+    }
+  } catch {
+    // Port 80 closed or unreachable: there's no insecure version to redirect.
+  }
+  return [];
 }

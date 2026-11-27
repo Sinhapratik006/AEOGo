@@ -6,6 +6,7 @@
     "node": "22.x"
   },
   "scripts": {
+    "predev": "npm run db:migrate",
     "dev": "concurrently -k -n web,worker -c blue,magenta \"next dev\" \"tsx watch worker/index.ts\"",
     "dev:web": "next dev",
     "dev:worker": "tsx watch worker/index.ts",

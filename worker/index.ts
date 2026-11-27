@@ -149,6 +149,18 @@ async function main() {
     shuttingDown = true;
     console.log(`[worker] ${signal} received, finishing up...`);
   };
+  // A dropped DB/network socket must not take the whole worker (and, under `npm run dev`,
+  // the web server) down. Stuck audits are picked up by recoverStaleAudits().
+  process.on("unhandledRejection", (err) => console.error("[worker] unhandled rejection", err));
+  process.on("uncaughtException", (err) => {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === "ECONNRESET" || code === "EPIPE" || code === "ETIMEDOUT" || /Connection terminated/i.test(err.message)) {
+      console.error("[worker] connection error (continuing)", err);
+      return;
+    }
+    console.error("[worker] fatal uncaught exception", err);
+    process.exit(1);
+  });
   process.on("SIGINT", () => shutdown("SIGINT"));
   process.on("SIGTERM", () => shutdown("SIGTERM"));
 
@@ -176,6 +188,7 @@ async function main() {
         console.log(`[worker] running audit ${auditId}`);
         const job: Promise<void> = runAudit(auditId)
           .then(() => console.log(`[worker] finished audit ${auditId}`))
+          .catch((err) => console.error(`[worker] audit ${auditId} crashed`, err))
           .finally(() => running.delete(job));
         running.add(job);
       }
